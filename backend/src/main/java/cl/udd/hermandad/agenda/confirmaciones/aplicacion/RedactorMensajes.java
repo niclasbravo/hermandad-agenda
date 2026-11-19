@@ -17,10 +17,6 @@ import java.util.Map;
  */
 public final class RedactorMensajes {
 
-    /** Orden de los parámetros que se envían a la plantilla aprobada en WhatsApp. */
-    public static final List<String> ORDEN_PARAMETROS =
-            List.of("nombre", "Fecha", "hora", "profesion", "profesional", "policlinico", "box", "direccion", "fecha");
-
     public static final List<String> BOTONES = List.of("Asistiré", "No podré asistir");
 
     private RedactorMensajes() {
@@ -43,9 +39,24 @@ public final class RedactorMensajes {
         return v;
     }
 
-    public static List<String> parametros(Cita cita) {
+    /**
+     * Parámetros para WhatsApp Cloud API: solo las variables que usa el texto de la plantilla, en el orden de su
+     * primera aparición. Meta rechaza el envío si la cantidad no coincide con los {{1}}..{{n}} de la plantilla
+     * aprobada, así que cada plantilla se registra en Meta reemplazando sus variables por {{1}}, {{2}}, ... en ese orden.
+     */
+    public static List<String> parametros(PlantillaMensaje plantilla, Cita cita) {
         Map<String, String> v = variables(cita);
-        return ORDEN_PARAMETROS.stream().map(v::get).toList();
+        return variablesEnOrden(plantilla.getTexto()).stream().map(v::get).toList();
+    }
+
+    /** Nombres de las variables {{x}} del texto, sin repetir, en el orden de su primera aparición. */
+    public static List<String> variablesEnOrden(String texto) {
+        java.util.LinkedHashSet<String> nombres = new java.util.LinkedHashSet<>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\{\\{(\\w+)}}").matcher(texto);
+        while (m.find()) {
+            nombres.add(m.group(1));
+        }
+        return List.copyOf(nombres);
     }
 
     public static String texto(PlantillaMensaje plantilla, Cita cita, Paciente.Destinatario destinatario) {

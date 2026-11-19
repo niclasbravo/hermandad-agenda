@@ -154,7 +154,7 @@ public class NotificacionService {
         LocalDateTime ahora = reloj.ahora();
         try {
             String idExterno = mensajeria.enviarPlantilla(m.getTelefonoDestino(), m.getPlantilla().getNombreProveedor(),
-                    RedactorMensajes.parametros(cita), m.getPlantilla().llevaBotones() ? RedactorMensajes.BOTONES : List.of());
+                    RedactorMensajes.parametros(m.getPlantilla(), cita), m.getPlantilla().llevaBotones() ? RedactorMensajes.BOTONES : List.of());
             m.marcarEnviado(idExterno, ahora);
             intentos.remove(idMensaje);
             mensajes.guardar(m);
