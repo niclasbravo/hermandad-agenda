@@ -1,0 +1,17 @@
+# Perfil de pruebas de integración (Testcontainers MySQL 8.0). La URL de la base la entrega PruebaIntegracion.
+agenda:
+  programador:
+    habilitado: false
+  almacen:
+    directorio: ${java.io.tmpdir}/agenda-pruebas/certificados
+mensajeria:
+  proveedor: simulador
+  simulador:
+    demora-entrega-segundos: -1
+  whatsapp:
+    app-secret: secreto-de-prueba
+    verify-token: verificacion-de-prueba
+logging:
+  level:
+    root: WARN
+    cl.udd.hermandad: WARN

@@ -1,0 +1,62 @@
+# Sistema de Agendamiento y Confirmación de Atenciones · Hermandad de Dolores
+# Vía única de creación del esquema: los scripts de db/ en /docker-entrypoint-initdb.d (sin Flyway).
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+      DB_USUARIO: ${DB_USUARIO:-agenda}
+      DB_CONTRASENA: ${DB_CONTRASENA:?Define DB_CONTRASENA en .env}
+      TZ: America/Santiago
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_spanish_ci", "--default-time-zone=America/Santiago"]
+    volumes:
+      - ./db/00_usuario_aplicacion.sh:/docker-entrypoint-initdb.d/00_usuario_aplicacion.sh:ro
+      - ./db/01_esquema_hermandad.sql:/docker-entrypoint-initdb.d/01_esquema_hermandad.sql:ro
+      - ./db/02_reglas_hermandad.sql:/docker-entrypoint-initdb.d/02_reglas_hermandad.sql:ro
+      - datos-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT COUNT(*) FROM hermandad_agenda.auditoria' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-demo}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USUARIO: ${DB_USUARIO:-agenda}
+      DB_CONTRASENA: ${DB_CONTRASENA}
+      TZ: America/Santiago
+      ALMACEN_DIRECTORIO: /datos/certificados
+      MENSAJERIA_PROVEEDOR: ${MENSAJERIA_PROVEEDOR:-simulador}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_API_VERSION: ${WHATSAPP_API_VERSION:-v21.0}
+      ADMIN_INICIAL_USUARIO: ${ADMIN_INICIAL_USUARIO:-}
+      ADMIN_INICIAL_CONTRASENA: ${ADMIN_INICIAL_CONTRASENA:-}
+    volumes:
+      - certificados:/datos/certificados
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${PUERTO_WEB:-8080}:80"
+
+volumes:
+  datos-mysql:
+  certificados:

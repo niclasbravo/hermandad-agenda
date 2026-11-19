@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: agenda-hermandad
+  profiles:
+    default: dev
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/hermandad_agenda?serverTimezone=America/Santiago&characterEncoding=UTF-8&connectionCollation=utf8mb4_spanish_ci&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${DB_USUARIO:agenda}
+    password: ${DB_CONTRASENA:agenda}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Santiago
+  jackson:
+    time-zone: America/Santiago
+    serialization:
+      write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 12MB
+  web:
+    locale: es_CL
+
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        http-only: true
+        same-site: lax
+        name: SESION_AGENDA
+  error:
+    include-message: never
+
+agenda:
+  zona-horaria: America/Santiago
+  almacen:
+    directorio: ${ALMACEN_DIRECTORIO:./datos/certificados}
+  programador:
+    habilitado: true
+
+mensajeria:
+  proveedor: ${MENSAJERIA_PROVEEDOR:simulador}
+  whatsapp:
+    token: ${WHATSAPP_TOKEN:}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    app-secret: ${WHATSAPP_APP_SECRET:}
+    verify-token: ${WHATSAPP_VERIFY_TOKEN:}
+    api-version: ${WHATSAPP_API_VERSION:v21.0}
+  simulador:
+    demora-entrega-segundos: 3
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN

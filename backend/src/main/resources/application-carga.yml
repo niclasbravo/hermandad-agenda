@@ -1,0 +1,8 @@
+# Generador de datos de carga (RNF-07): 12 meses de historia en los 6 policlínicos.
+# Uso con una base vacía: SPRING_PROFILES_ACTIVE=carga
+demo:
+  meses-historia: 12
+  pacientes: 4000
+mensajeria:
+  simulador:
+    demora-entrega-segundos: 3

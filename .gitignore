@@ -1,0 +1,13 @@
+.env
+node_modules/
+dist/
+target/
+*.log
+.DS_Store
+.idea/
+.vscode/
+datos/
+respaldos/
+test-results/
+playwright-report/
+*.tsbuildinfo
