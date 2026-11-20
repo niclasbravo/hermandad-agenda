@@ -11,3 +11,4 @@ respaldos/
 test-results/
 playwright-report/
 *.tsbuildinfo
+.env.nube
