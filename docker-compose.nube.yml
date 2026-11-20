@@ -1,0 +1,36 @@
+# Despliegue en la nube (servidor con IP pública). Se usa ENCIMA de docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.nube.yml up -d --build
+# Agrega Caddy delante de Nginx: obtiene y renueva solo el certificado HTTPS (Let's Encrypt) para DOMINIO.
+# WhatsApp exige HTTPS válido para el webhook /webhooks/whatsapp.
+services:
+  mysql:
+    # En la nube MySQL no se publica fuera del servidor: solo lo usa el backend por la red interna.
+    ports: !reset []
+
+  backend:
+    environment:
+      # Servidor de 2 GB: deja memoria para MySQL y Nginx.
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx640m"
+
+  frontend:
+    # Ya no se publica el 8080: el tráfico entra por Caddy (80/443).
+    ports: !reset []
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO:?Define DOMINIO en .env (por ejemplo 3-91-20-15.sslip.io)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-datos:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-datos:
+  caddy-config:

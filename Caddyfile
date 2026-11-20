@@ -1,0 +1,6 @@
+# HTTPS automático para el despliegue en la nube (docker-compose.nube.yml).
+# DOMINIO viene de .env. Caddy pide el certificado a Let's Encrypt y lo renueva solo.
+{$DOMINIO} {
+	encode gzip
+	reverse_proxy frontend:80
+}

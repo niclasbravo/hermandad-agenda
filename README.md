@@ -48,6 +48,10 @@ docker compose up --build     # → http://localhost:8080 (portada) y http://loc
 La primera vez MySQL crea el esquema con `db/00`, `db/01` y `db/02` (vía única: `/docker-entrypoint-initdb.d`, sin Flyway).
 Con `SPRING_PROFILES_ACTIVE=demo` (valor del `.env.example`) se cargan datos de demostración si la base está vacía.
 
+### En la nube (AWS)
+
+Guía completa en [`docs/DESPLIEGUE_AWS.md`](docs/DESPLIEGUE_AWS.md): mismo Docker Compose más `docker-compose.nube.yml` (Caddy con HTTPS automático), en un servidor Lightsail de 2 GB. Se despliega con `scripts/desplegar.sh ubuntu@IP llave.pem`.
+
 ### Usuarios de demostración
 
 Contraseña de todos: `Hermandad2026!` (solo para la demo).
