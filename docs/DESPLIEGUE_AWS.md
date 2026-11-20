@@ -17,6 +17,31 @@ Internet ──HTTPS 443──▶ Caddy ──▶ Nginx (frontend: React + proxy
 | `scripts/preparar-servidor.sh` | Una vez, en el servidor: instala Docker, crea 2 GB de swap y fija la zona horaria. |
 | `scripts/desplegar.sh` | Desde tu PC: sube el código de `HEAD` y el `.env`, y reconstruye. Se repite en cada actualización. |
 
+## Despliegue actual (entrega del 23-11-2026): AWS Academy Learner Lab
+
+El equipo no tiene presupuesto para hosting, así que la entrega usa el **AWS Academy Learner Lab** del curso
+(US$50 de crédito, sin tarjeta). Es el mismo diseño descrito abajo, con EC2 en lugar de Lightsail:
+
+| Recurso | Valor |
+|---|---|
+| Región | us-east-1 (Norte de Virginia; el Learner Lab solo permite us-east-1 y us-west-2) |
+| Instancia EC2 | `hermandad-agenda`, **t3.small** (2 vCPU, 2 GB) + 2 GB de swap, Ubuntu 24.04 LTS, disco gp3 de 20 GB |
+| Grupo de seguridad | `launch-wizard-1`: SSH 22, HTTP 80, HTTPS 443 |
+| IP elástica | `100.59.97.56` |
+| URL | **https://100-59-97-56.sslip.io** (personal: `/ingreso`) |
+| Llave SSH | `labsuser.pem` del Learner Lab (AWS Details → Download PEM), usuario `ubuntu` |
+| Variables | `.env.nube` (fuera del repositorio): perfil `demo`, contraseñas de base de datos propias de la nube |
+
+**Disponibilidad:** el Learner Lab apaga la instancia al terminar cada sesión (4 h). Antes de una revisión o de la
+defensa: **Start Lab** y esperar ~3 minutos; los contenedores tienen `restart: unless-stopped` y se levantan solos.
+Los datos persisten en el disco (volúmenes de Docker), así que no se pierden al apagar.
+
+**Costo aproximado:** t3.small US$0,021/h encendida; IP elástica + disco ~US$0,17/día aunque esté apagada.
+
+**Datos y Ley 21.719:** la base y los certificados quedan en el disco de la instancia, en EE. UU. (us-east-1).
+Es la transferencia internacional ya identificada como riesgo en la factibilidad; para producción corresponde
+revisar el contrato del proveedor, cifrar el disco y preferir una región en Chile si el proveedor la ofrece.
+
 ## 1. Crear el servidor (consola de AWS)
 
 1. lightsail.aws.amazon.com → **Crear instancia**.
