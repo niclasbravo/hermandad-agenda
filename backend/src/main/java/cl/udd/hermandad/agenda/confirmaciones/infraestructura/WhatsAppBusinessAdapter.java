@@ -29,7 +29,7 @@ public class WhatsAppBusinessAdapter implements IServicioMensajeria {
         }
         this.token = token;
         this.phoneNumberId = phoneNumberId;
-        this.version = version == null || version.isBlank() ? "v21.0" : version;
+        this.version = version == null || version.isBlank() ? "v25.0" : version;
         this.json = json;
     }
 

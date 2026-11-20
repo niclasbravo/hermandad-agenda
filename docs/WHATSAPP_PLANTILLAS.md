@@ -17,8 +17,11 @@ En todas:
 - **Encabezado y pie:** ninguno.
 - Copia el **cuerpo** tal cual, con sus saltos de línea. En «Muestras de variables» usa los ejemplos de la tabla.
 
-Si Meta rechaza una plantilla por «demasiadas variables para la longitud del mensaje», avisa al equipo: hay que
-alargar el texto fijo en Meta **y** en la tabla `plantilla_mensaje`, porque el orden de las variables debe coincidir.
+Meta rechaza un texto con «demasiadas variables en relación con su longitud». Por eso el recordatorio y el refuerzo
+tienen más texto fijo que en la especificación original (DI-26). Si cambias un texto, cámbialo en Meta **y** en
+`RedactorMensajes.plantillasIniciales` / tabla `plantilla_mensaje`: lo que debe coincidir es el orden de las variables.
+
+**Estado (19-11-2026):** las 6 plantillas están creadas en la cuenta de prueba «Hermandad Agenda Demo» y enviadas a revisión.
 
 ---
 
@@ -61,10 +64,10 @@ Para su primera atención, traiga su certificado de FONASA y su certificado de i
 ### 3. `hermandad_recordatorio` (el día antes), **con botones**
 
 ```
-Recuerde su hora de mañana:
-{{1}}, {{2}}
+Hola, le recordamos su hora de mañana en la Hermandad de Dolores:
+{{1}}, a las {{2}}
 {{3}}, Policlínico {{4}}, {{5}}.
-¿Podrá asistir?
+¿Podrá asistir? Responda con uno de los botones de abajo.
 ```
 
 | Variable | Dato | Ejemplo |
@@ -81,10 +84,10 @@ El backend asigna la carga `ASISTIRA` al primero y `NO_ASISTIRA` al segundo.
 ### 4. `hermandad_refuerzo` (refuerzo si no respondió), **con botones**
 
 ```
-Recuerde su hora del {{1}}:
-{{2}}, {{3}}
+Hola, le recordamos nuevamente su hora del {{1}} en la Hermandad de Dolores:
+{{2}}, a las {{3}}
 {{4}}, Policlínico {{5}}, {{6}}.
-¿Podrá asistir?
+¿Podrá asistir? Responda con uno de los botones de abajo.
 ```
 
 | Variable | Dato | Ejemplo |
