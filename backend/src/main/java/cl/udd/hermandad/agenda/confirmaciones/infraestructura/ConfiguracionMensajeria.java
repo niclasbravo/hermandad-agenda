@@ -15,7 +15,7 @@ public class ConfiguracionMensajeria {
     public IServicioMensajeria servicioMensajeria(@Value("${mensajeria.proveedor:simulador}") String proveedor,
                                                   @Value("${mensajeria.whatsapp.token:}") String token,
                                                   @Value("${mensajeria.whatsapp.phone-number-id:}") String phoneNumberId,
-                                                  @Value("${mensajeria.whatsapp.api-version:v21.0}") String version,
+                                                  @Value("${mensajeria.whatsapp.api-version:v25.0}") String version,
                                                   @Value("${mensajeria.simulador.demora-entrega-segundos:3}") long demora,
                                                   ObjectMapper json, ObjectProvider<NotificacionService> notificaciones) {
         if ("whatsapp".equalsIgnoreCase(proveedor)) {

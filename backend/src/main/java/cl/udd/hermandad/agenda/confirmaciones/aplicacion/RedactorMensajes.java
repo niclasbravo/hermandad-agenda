@@ -17,10 +17,6 @@ import java.util.Map;
  */
 public final class RedactorMensajes {
 
-    /** Orden de los parámetros que se envían a la plantilla aprobada en WhatsApp. */
-    public static final List<String> ORDEN_PARAMETROS =
-            List.of("nombre", "Fecha", "hora", "profesion", "profesional", "policlinico", "box", "direccion", "fecha");
-
     public static final List<String> BOTONES = List.of("Asistiré", "No podré asistir");
 
     private RedactorMensajes() {
@@ -43,9 +39,24 @@ public final class RedactorMensajes {
         return v;
     }
 
-    public static List<String> parametros(Cita cita) {
+    /**
+     * Parámetros para WhatsApp Cloud API: solo las variables que usa el texto de la plantilla, en el orden de su
+     * primera aparición. Meta rechaza el envío si la cantidad no coincide con los {{1}}..{{n}} de la plantilla
+     * aprobada, así que cada plantilla se registra en Meta reemplazando sus variables por {{1}}, {{2}}, ... en ese orden.
+     */
+    public static List<String> parametros(PlantillaMensaje plantilla, Cita cita) {
         Map<String, String> v = variables(cita);
-        return ORDEN_PARAMETROS.stream().map(v::get).toList();
+        return variablesEnOrden(plantilla.getTexto()).stream().map(v::get).toList();
+    }
+
+    /** Nombres de las variables {{x}} del texto, sin repetir, en el orden de su primera aparición. */
+    public static List<String> variablesEnOrden(String texto) {
+        java.util.LinkedHashSet<String> nombres = new java.util.LinkedHashSet<>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\{\\{(\\w+)}}").matcher(texto);
+        while (m.find()) {
+            nombres.add(m.group(1));
+        }
+        return List.copyOf(nombres);
     }
 
     public static String texto(PlantillaMensaje plantilla, Cita cita, Paciente.Destinatario destinatario) {
@@ -54,6 +65,8 @@ public final class RedactorMensajes {
             t = t.replace("Hola, {{nombre}}. Su hora quedó reservada.", "Hola. La hora de {{nombre}} quedó reservada.")
                  .replace("Hola, {{nombre}}. Su hora del", "Hola. La hora de {{nombre}} del")
                  .replace("Recuerde su hora", "Recuerde la hora de {{nombre}}")
+                 .replace("le recordamos su hora", "le recordamos la hora de {{nombre}}")
+                 .replace("le recordamos nuevamente su hora", "le recordamos nuevamente la hora de {{nombre}}")
                  .replace("Anulamos su hora", "Anulamos la hora de {{nombre}}")
                  .replace("Si no puede asistir", "Si no puede asistir")
                  .replace("Para su primera atención, traiga su certificado", "Para su primera atención, traiga el certificado");
@@ -73,10 +86,13 @@ public final class RedactorMensajes {
                 new String[]{"CONFIRMACION", PlantillaMensaje.CONFIRMACION, cuerpoConfirmacion},
                 new String[]{"CONFIRMACION", PlantillaMensaje.CONFIRMACION_PENDIENTE, cuerpoConfirmacion
                         + "\nPara su primera atención, traiga su certificado de FONASA y su certificado de inscripción en el CESFAM."},
-                new String[]{"RECORDATORIO", PlantillaMensaje.RECORDATORIO, "Recuerde su hora de mañana:\n{{Fecha}}, {{hora}}\n"
-                        + "{{profesion}}, Policlínico {{policlinico}}, {{box}}.\n¿Podrá asistir?"},
-                new String[]{"REFUERZO", PlantillaMensaje.REFUERZO, "Recuerde su hora del {{fecha}}:\n{{Fecha}}, {{hora}}\n"
-                        + "{{profesion}}, Policlínico {{policlinico}}, {{box}}.\n¿Podrá asistir?"},
+                // Meta exige suficiente texto fijo por variable: estos dos textos son los aprobados en WhatsApp Manager.
+                new String[]{"RECORDATORIO", PlantillaMensaje.RECORDATORIO,
+                        "Hola, le recordamos su hora de mañana en la Hermandad de Dolores:\n{{Fecha}}, a las {{hora}}\n"
+                        + "{{profesion}}, Policlínico {{policlinico}}, {{box}}.\n¿Podrá asistir? Responda con uno de los botones de abajo."},
+                new String[]{"REFUERZO", PlantillaMensaje.REFUERZO,
+                        "Hola, le recordamos nuevamente su hora del {{fecha}} en la Hermandad de Dolores:\n{{Fecha}}, a las {{hora}}\n"
+                        + "{{profesion}}, Policlínico {{policlinico}}, {{box}}.\n¿Podrá asistir? Responda con uno de los botones de abajo."},
                 new String[]{"ANULACION", PlantillaMensaje.ANULACION, "Gracias por avisar. Anulamos su hora del {{fecha}} a las {{hora}}.\n"
                         + "Si necesita una nueva hora, escriba o llame al policlínico."},
                 new String[]{"ANULACION", PlantillaMensaje.ANULACION_POLICLINICO, "Hola, {{nombre}}. Su hora del {{fecha}} a las {{hora}} "
