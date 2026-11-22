@@ -49,7 +49,7 @@ public class AsistenciaService {
     /** RF-22: «Asistió» o «No asistió», una sola vez. Se refleja en el historial y los reportes sin traspasos. */
     public Cita registrarAsistencia(Long idCita, boolean asistio) {
         UsuarioSesion u = SesionActual.usuario();
-        Cita cita = citas.buscar(idCita).orElseThrow(() -> ErrorNegocio.noEncontrado("No encontramos esa cita."));
+        Cita cita = citas.buscarParaModificar(idCita).orElseThrow(() -> ErrorNegocio.noEncontrado("No encontramos esa cita."));
         Integer pol = cita.getCupo().getBloque().getBox().getPoliclinico().getId();
         if (u.esTens() && !pol.equals(u.idPoliclinicoBase())) {
             throw ErrorNegocio.sinPermiso("Esta cita es de otro policlínico.");

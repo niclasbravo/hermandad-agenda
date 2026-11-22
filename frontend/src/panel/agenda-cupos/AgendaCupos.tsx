@@ -416,7 +416,9 @@ function ModalAfectadas({ datos, alCerrar }: { datos: { lista: CitaAfectada[]; i
       });
       await datos.reintentar();
     },
-    onSuccess: () => { invalidar(); alCerrar(); },
+    onSuccess: () => alCerrar(),
+    // Si el reintento falla, las citas ya quedaron resueltas: igual se refresca la agenda.
+    onSettled: () => invalidar(),
   });
   const listo = datos.lista.every((a) => acciones[a.idCita].accion === 'ANULAR' || acciones[a.idCita].idCupoNuevo);
   return (

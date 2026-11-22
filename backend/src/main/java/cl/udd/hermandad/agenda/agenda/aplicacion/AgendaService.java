@@ -151,6 +151,9 @@ public class AgendaService {
     public BloqueHorario desactivarBloque(Integer idBloque) {
         Integer idUsuario = SesionActual.usuario().idUsuario();
         BloqueHorario actual = bloque(idBloque);
+        if (!actual.isActivo()) {
+            throw ErrorNegocio.regla("BLOQUE_INACTIVO", "Este bloque ya está desactivado.");
+        }
         List<Cupo> sobrantes = cupos.delBloque(idBloque, reloj.hoy(), null);
         exigirSinAfectadas(sobrantes);
         actual.desactivar();

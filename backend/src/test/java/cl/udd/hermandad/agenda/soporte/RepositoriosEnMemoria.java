@@ -47,6 +47,11 @@ public final class RepositoriosEnMemoria {
         }
 
         @Override
+        public Optional<Cita> buscarParaModificar(Long id) {
+            return buscar(id);
+        }
+
+        @Override
         public List<Cita> buscarDelDia(Integer idPoliclinico, LocalDate fecha) {
             return datos.values().stream().filter(c -> c.getCupo().getFecha().equals(fecha)).toList();
         }
