@@ -32,17 +32,17 @@ Para ejecutarlo localmente, ver [Cómo ejecutar](#cómo-ejecutar).
 
 **Listo y verificado a mano contra la API:** backend completo (M1 a M8, seguridad por perfil, auditoría, reserva en línea, simulador y adapter de WhatsApp, webhook, programador de tareas), frontend con todas las pantallas del Figma, datos demo de 6 meses (ocupación de 91,5 % e inasistencia de 15,0 %), generador de carga (perfil `carga`), scripts de respaldo y restauración, Docker Compose y documentación. El recorrido «reservar → confirmación por WhatsApp → No podré asistir → cupo liberado con la lista de espera» funciona de punta a punta.
 
-**Pruebas (verificado el 19-11-2026):** 93 pruebas unitarias del backend (dominio, servicios con repositorios en memoria, ArchUnit y plantillas de WhatsApp) y 12 pruebas de Vitest del frontend, todas en verde. `docker compose up --build` completo probado en local y en la nube.
+**Pruebas (verificado el 22-11-2026):** 201 pruebas del backend (unitarias de dominio y servicios, ArchUnit, plantillas de WhatsApp y de integración con Testcontainers sobre MySQL real) y 21 pruebas de Vitest del frontend, todas en verde. `docker compose up --build` completo probado en local y en la nube. Los casos de prueba de aceptación ejecutados contra la nube están en [`docs/EVIDENCIAS_PRUEBAS_NUBE.md`](docs/EVIDENCIAS_PRUEBAS_NUBE.md).
 
 **Falta:**
-- [ ] **Pruebas de integración (Testcontainers):** están escritas en `backend/src/test/java/.../integracion/` (catálogo y agenda, citas, concurrencia CA-RF15-3, pacientes, lista de espera, confirmaciones y webhook, reserva en línea, asistencia y reportes, seguridad), pero no se terminaron de ejecutar ni de corregir.
+- [x] **Pruebas de integración (Testcontainers)** en `backend/src/test/java/.../integracion/` (catálogo y agenda, citas, concurrencia CA-RF15-3, pacientes, lista de espera, confirmaciones y webhook, reserva en línea, asistencia y reportes, seguridad): ejecutadas y en verde.
 - [ ] **Pruebas SQL:** faltan `db/03_datos_prueba_hermandad.sql` y `db/04_pruebas.sql` (las 10 operaciones inválidas de la sección 15.2 y el caso permitido), junto con la prueba Java que las ejecuta.
-- [ ] **Pruebas del frontend:** `npm test` en verde (12 pruebas). Falta agregar la prueba «anular con aviso de lista de espera».
+- [x] **Pruebas del frontend:** `npm test` en verde (21 pruebas), incluida «anular con aviso de lista de espera».
 - [ ] **Revisión visual** de las pantallas contra `docs/pantallas/*.png`, incluido el ancho de celular (390 px).
 - [x] **`docker compose up --build` completo** probado (local y nube).
 - [x] **Despliegue en la nube** con HTTPS (AWS Academy Learner Lab).
 - [ ] **Completar la columna «Prueba»** de `docs/TRAZABILIDAD.md`.
-- [ ] **Logo real:** descargarlo del Figma a `frontend/public/logo.png` (hoy hay un marcador; DI-36).
+- [x] **Logo oficial** en `frontend/public/logo.png` (DI-36).
 - [ ] **Validar con la mandante:** las categorías de género y de relación del adulto responsable (DI-38) y la duración de alumnos según la planilla «Estándar de atención por profesional» (DI-41).
 - [ ] **WhatsApp real:** las 6 plantillas están creadas en Meta y en revisión; falta su aprobación, el token permanente y las variantes para el adulto responsable (DI-25).
 
