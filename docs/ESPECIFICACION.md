@@ -240,9 +240,9 @@ Autenticación con usuario y contraseña (BCrypt). Sesión de servidor con cooki
 
 - La TENS/TONS tiene un **policlínico base** (`usuario.id_policlinico`). Su agenda del día, su lista de espera, sus avisos y su listado de inasistencia se filtran por ese policlínico. Al reservar puede buscar cupos de cualquier policlínico, porque un paciente puede atenderse en otra sede.
 - La Administración no tiene policlínico base (NULL) y elige el policlínico en los filtros.
-- **Pantalla de ingreso P-00:** campos «Usuario» y «Contraseña», y dos botones: **«Ingresar como TENS/TONS»** e **«Ingresar como Administración»**. El backend valida que el perfil del usuario coincida con el botón. Si no coincide, muestra «Este usuario no tiene perfil de …». En la captura aparece un campo «Policlínico»: muéstralo de solo lectura, con el policlínico base, una vez que se reconoce el usuario. Debajo va el enlace «← Volver al sitio de reserva de horas».
-- Menú lateral de **TENS/TONS:** Agenda del día · Pacientes · Reservar cita · Reportes (solo «Inasistencia reiterada»). Abajo: nombre, «TENS/TONS · {policlínico}» y «Cambiar perfil» (cierra la sesión).
-- Menú lateral de **Administración:** Agenda de cupos · Policlínicos y profesionales · Reportes. Abajo: nombre, «Administración» y «Cambiar perfil».
+- **Pantalla de ingreso P-00:** campos «Usuario» y «Contraseña» (obligatorios, con asterisco) y **un solo botón «Ingresar»**. El perfil (TENS/TONS o Administración) y el policlínico base salen de la cuenta, no se eligen: el backend autentica y el panel abre las vistas de ese perfil. Si las credenciales no son válidas, muestra un mensaje general sin revelar qué usuarios existen. Debajo va el enlace «← Volver al sitio de reserva de horas». *(Cambio del 21/11/2026 por la retroalimentación del curso: antes había dos botones, uno por perfil.)*
+- Menú lateral de **TENS/TONS:** Agenda del día · Pacientes · Reservar cita · Reportes (solo «Inasistencia reiterada»). Abajo: nombre, «TENS/TONS · {policlínico}» y «Cerrar sesión».
+- Menú lateral de **Administración:** Agenda de cupos · Policlínicos y profesionales · Reportes. Abajo: nombre, «Administración» y «Cerrar sesión».
 - La API pública `/api/publico/**` no requiere sesión. Tiene un **límite de intentos** de identificación (5 fallidos por IP cada 10 minutos, con respuesta 429 genérica) y nunca devuelve datos de la ficha.
 
 ---
@@ -593,7 +593,7 @@ Agrega un rojo de error accesible (por ejemplo `#b42318` sobre `#fdecea`) para �
 **Etiquetas de estado (chips):** Confirmada (verde suave), No enviada (amarillo resaltador), Sin respuesta (gris), Confirmada por teléfono (verde), Pendiente de verificación (amarillo), Habilitada / Habilitada para reservar (verde), Próxima (turquesa suave), Asistió (verde), No asistió (rojo suave), Anulada (gris).
 
 ### 12.2 Diseño general del panel
-Menú lateral fijo (≈248 px) con el logo, el subtítulo «Agenda de atenciones», los ítems del perfil y el pie con el usuario y «Cambiar perfil». Cabecera de cada pantalla: título en Bitter, subtítulo gris y, a la derecha, el buscador «Buscar paciente por RUT» con el botón «Buscar» (en las pantallas de la TENS/TONS). Contenido en tarjetas blancas con radio de 12 px sobre `--color-fondo`. Mira `docs/pantallas/M-06_agenda_del_dia.png`.
+Menú lateral fijo (≈248 px) con el logo, el subtítulo «Agenda de atenciones», los ítems del perfil y el pie con el usuario y «Cerrar sesión». Cabecera de cada pantalla: título en Bitter, subtítulo gris y, a la derecha, el buscador «Buscar paciente por RUT» con el botón «Buscar» (en las pantallas de la TENS/TONS). Contenido en tarjetas blancas con radio de 12 px sobre `--color-fondo`. Mira `docs/pantallas/M-06_agenda_del_dia.png`.
 
 ### 12.3 Pantallas y rutas (todas están en `docs/PANTALLAS_FIGMA.md` con sus textos)
 **Pública — `src/reserva-en-linea`**

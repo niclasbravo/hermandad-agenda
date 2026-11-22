@@ -51,7 +51,7 @@ Decisiones tomadas durante la construcción que no estaban en la especificación
 | DI-28 | **Identificación sin revelar si el RUT existe (CA-RF35-1).** Documento inexistente o con otra fecha de nacimiento → misma respuesta `NUEVO`. Cada respuesta `NUEVO` y cada documento inválido cuentan como intento fallido para el límite (5 por IP cada 10 minutos → 429 genérico). Si al registrar los datos el documento ya existe → mensaje general «No pudimos completar la reserva en línea…», sin crear duplicados. | Sección 10.3. |
 | DI-29 | El token de la reserva en línea va en la cabecera `X-Token-Reserva`; vive 30 minutos en memoria (Caffeine) y queda ligado al documento y la fecha de nacimiento. Los certificados solo se pueden subir para la cita creada con ese token y mientras esté pendiente de verificación. | Sección 10.2. |
 | DI-30 | Detrás de Nginx, la IP del límite de intentos se toma de `X-Real-IP` (el backend no se expone directamente). | Docker Compose. |
-| DI-31 | En la pantalla de ingreso, el campo «Policlínico» es de solo lectura con el texto «Se asigna según tu usuario»; el policlínico base aparece en el menú tras ingresar. | Mostrarlo antes de autenticar revelaría qué usuarios existen. |
+| DI-31 | La pantalla de ingreso no muestra el campo «Policlínico» ni pide elegir el perfil: hay un solo botón «Ingresar» y el perfil y el policlínico base salen de la cuenta (el policlínico aparece en el menú tras ingresar). | Retroalimentación del curso (21/11) y no revelar qué usuarios existen antes de autenticar. |
 | DI-32 | El webhook rechaza todo (401) si `WHATSAPP_APP_SECRET` no está definido. | Firma obligatoria. |
 | DI-33 | Las respuestas repetidas del webhook se ignoran con un caché en memoria del id del mensaje entrante (48 horas); los avisos de estado son idempotentes porque no retroceden (LEIDO no vuelve a ENTREGADO). | Sección 10.5. |
 
@@ -61,7 +61,7 @@ Decisiones tomadas durante la construcción que no estaban en la especificación
 |---|---|---|
 | DI-34 | Ruta de «Reservar cita» del panel: `/reservar-cita` (la especificación usaba `/reservar` para ambas; `/reservar` quedó para la reserva en línea pública). | Conflicto de rutas. |
 | DI-35 | Los profesionales se muestran con nombre y apellido, sin «Dra.», «Klgo.» ni «Ps.» (el esquema no guarda el tratamiento y RNF-02 pide evitar abreviaturas). | RNF-02. |
-| DI-36 | **Logo:** se usa un marcador en SVG con el texto institucional. **TODO del equipo:** descargar el logo del Figma y dejarlo en `frontend/public/logo.png`, y usarlo en `Logo` (`frontend/src/compartido/componentes.tsx`). | Sección 12.1. |
+| DI-36 | **Logo:** se usa el logo oficial de la Hermandad en `frontend/public/logo.png` (componente `Logo` de `frontend/src/compartido/componentes.tsx`), en tres tamaños. | Sección 12.1. |
 | DI-37 | El formulario en línea pide «Nombres» y «Apellidos» por separado (el prototipo tenía «Nombre completo») porque el esquema los guarda separados. | Esquema. |
 | DI-38 | Opciones de género: Femenino, Masculino, Otro, Prefiere no decir. Relación del adulto: lista cerrada (madre, padre, hijo, hija, abuela…). **Validar con la mandante** las categorías de la ficha de ingreso. | El esquema dice «según la ficha de ingreso de la institución». |
 | DI-39 | El período de los reportes se elige por mes (por defecto, el mes actual) o por rango. La comparación es con el período anterior de igual largo. | Sección 7 (M8). |

@@ -65,7 +65,21 @@ public class ListaEsperaService {
 
     @Transactional(readOnly = true)
     public List<InscripcionEspera> listar(Integer idPoliclinico, Integer idProfesion) {
-        return repositorio.enEspera(idPoliclinico, idProfesion);
+        return conMovimientos(repositorio.enEspera(idPoliclinico, idProfesion));
+    }
+
+    /**
+     * El controlador arma el DTO fuera de la transacción (open-in-view desactivado), así que el historial
+     * de movimientos (colección perezosa) se carga aquí. Sin esto, la lista de espera respondía 500.
+     */
+    private static List<InscripcionEspera> conMovimientos(List<InscripcionEspera> lista) {
+        lista.forEach(ListaEsperaService::conMovimientos);
+        return lista;
+    }
+
+    private static InscripcionEspera conMovimientos(InscripcionEspera i) {
+        i.getMovimientos().size();
+        return i;
     }
 
     @Transactional(readOnly = true)
@@ -75,7 +89,7 @@ public class ListaEsperaService {
 
     @Transactional(readOnly = true)
     public List<InscripcionEspera> delPaciente(Integer idPaciente) {
-        return repositorio.enEsperaDelPaciente(idPaciente);
+        return conMovimientos(repositorio.enEsperaDelPaciente(idPaciente));
     }
 
     /** RF-42: queda donde la TENS/TONS indique (por defecto, primero). */
@@ -97,7 +111,7 @@ public class ListaEsperaService {
         i.adelantar(motivo, nueva, idUsuario, reloj.ahora());
         repositorio.guardar(i);
         auditoria.registrar(AccionAuditoria.ADELANTAR, "inscripcion_espera", i.getId(), motivo);
-        return i;
+        return conMovimientos(i);
     }
 
     /** RF-43. */
@@ -109,7 +123,7 @@ public class ListaEsperaService {
         repositorio.guardar(i);
         auditoria.registrar(AccionAuditoria.RETIRAR, "inscripcion_espera", i.getId(),
                 motivo + (detalle == null ? "" : ": " + detalle));
-        return i;
+        return conMovimientos(i);
     }
 
     /** RF-26: si hay pacientes esperando esa atención en ese policlínico, avisa a la TENS/TONS. */

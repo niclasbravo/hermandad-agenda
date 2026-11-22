@@ -18,8 +18,8 @@ Proyecto del curso Ingeniería de Software (UDD, 2026) · Equipo: Nicolás Bravo
 |---|---|
 | Sitio público (reserva en línea) | **https://100-59-97-56.sslip.io** |
 | Ingreso del personal | **https://100-59-97-56.sslip.io/ingreso** |
-| Usuario de prueba TENS/TONS | `c.munoz` → botón «Ingresar como TENS/TONS» |
-| Usuario de prueba Administración | `l.martinez` → botón «Ingresar como Administración» |
+| Usuario de prueba TENS/TONS | `c.munoz` (entra como TENS/TONS, Casa Central) |
+| Usuario de prueba Administración | `l.martinez` (entra como Administración) |
 | Contraseña (solo demo) | `Hermandad2026!` |
 | Simulador de WhatsApp | https://100-59-97-56.sslip.io/simulador-whatsapp |
 
@@ -95,7 +95,7 @@ Contraseña de todos: `Hermandad2026!` (solo para la demo).
 | `c.munoz` | TENS/TONS | Casa Central |
 | `tens.santateresa`, `tens.sagradafamilia`, `tens.padrehurtado`, `tens.mariaayuda`, `tens.oratoriomariano` | TENS/TONS | su policlínico |
 
-En el ingreso, elige el botón del perfil que corresponde al usuario («Ingresar como TENS/TONS» o «Ingresar como Administración»).
+En el ingreso hay un solo botón, «Ingresar»: el perfil y el policlínico salen de la cuenta.
 
 ### Recorrido sugerido para la demo
 
