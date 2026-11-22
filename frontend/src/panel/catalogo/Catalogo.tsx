@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Ban, Check, Pencil, Plus, UserPlus } from 'lucide-react';
 import { api, ErrorDeApi } from '../../compartido/api';
-import { Cargando, MensajeError, Modal } from '../../compartido/componentes';
+import { Cargando, MensajeError, Modal, Obligatorio } from '../../compartido/componentes';
 import type { Policlinico, Profesion, Profesional } from '../../compartido/tipos';
 import { Cabecera } from '../DisenoPanel';
 import { usePoliclinicos, useProfesionales, useProfesiones } from '../consultas';
@@ -153,11 +153,11 @@ function ModalProfesional({ actual, alCerrar, alGuardar }: { actual?: Profesiona
       <form className="pila" onSubmit={handleSubmit((d) => guardar.mutate(d))} noValidate>
         <h3>Datos del profesional</h3>
         <div className="grilla-2">
-          <div className="campo"><label htmlFor="pr-nom">Nombres *</label><input id="pr-nom" className="control" {...register('nombres')} aria-invalid={!!errors.nombres} />
+          <div className="campo"><label htmlFor="pr-nom">Nombres <Obligatorio /></label><input id="pr-nom" className="control" {...register('nombres')} aria-invalid={!!errors.nombres} />
             {errors.nombres && <span className="campo-error">{errors.nombres.message}</span>}</div>
-          <div className="campo"><label htmlFor="pr-ape">Apellidos *</label><input id="pr-ape" className="control" {...register('apellidos')} aria-invalid={!!errors.apellidos} />
+          <div className="campo"><label htmlFor="pr-ape">Apellidos <Obligatorio /></label><input id="pr-ape" className="control" {...register('apellidos')} aria-invalid={!!errors.apellidos} />
             {errors.apellidos && <span className="campo-error">{errors.apellidos.message}</span>}</div>
-          <div className="campo"><label htmlFor="pr-prof">Profesión *</label>
+          <div className="campo"><label htmlFor="pr-prof">Profesión <Obligatorio /></label>
             <select id="pr-prof" className="control" {...register('idProfesion')} aria-invalid={!!errors.idProfesion}>
               <option value={0}>Elige una profesión</option>
               {profesiones.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -167,7 +167,7 @@ function ModalProfesional({ actual, alCerrar, alGuardar }: { actual?: Profesiona
         </div>
         {sinDuracion && <div className="aviso aviso--alerta">No se generarán cupos hasta definir la duración de {profesiones.data?.find((p) => p.id === idProf)?.nombre}.</div>}
         <fieldset className="pila--chica" style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend className="etiqueta" style={{ marginBottom: 6 }}>Policlínicos donde atiende *</legend>
+          <legend className="etiqueta" style={{ marginBottom: 6 }}>Policlínicos donde atiende <Obligatorio /></legend>
           <div className="grilla-3">
             {policlinicos.data?.map((p) => <label key={p.id} className="casilla"><input type="checkbox" value={p.id} {...register('idsPoliclinico')} /> Policlínico {p.nombre}</label>)}
           </div>
@@ -203,7 +203,7 @@ function ModalDuracion({ profesion, alCerrar }: { profesion: Profesion; alCerrar
   return (
     <Modal titulo={`Modificar duración de ${profesion.nombre}`} alCerrar={alCerrar} descripcion="Cada bloque horario se dividirá en cupos de esta duración.">
       <div className="grilla-2">
-        <div className="campo"><label htmlFor="d-min">Minutos por paciente *</label>
+        <div className="campo"><label htmlFor="d-min">Minutos por paciente <Obligatorio /></label>
           <input id="d-min" type="number" min={5} max={240} className="control" value={min} onChange={(e) => setMin(e.target.value)} aria-invalid={!!campos.duracionMin} />
           {campos.duracionMin && <span className="campo-error">{campos.duracionMin}</span>}</div>
         <div className="campo"><label htmlFor="d-alu">Minutos con alumno en práctica</label>
@@ -241,11 +241,11 @@ function ModalPoliclinico({ actual, alCerrar }: { actual?: Policlinico; alCerrar
   const campos = guardar.error instanceof ErrorDeApi ? guardar.error.campos : {};
   return (
     <Modal titulo={actual ? `Policlínico ${actual.nombre}` : 'Registrar policlínico'} alCerrar={alCerrar}>
-      <div className="campo"><label htmlFor="pol-nom">Nombre *</label><input id="pol-nom" className="control" value={nombre} onChange={(e) => setNombre(e.target.value)} aria-invalid={!!campos.nombre} />
+      <div className="campo"><label htmlFor="pol-nom">Nombre <Obligatorio /></label><input id="pol-nom" className="control" value={nombre} onChange={(e) => setNombre(e.target.value)} aria-invalid={!!campos.nombre} />
         {campos.nombre && <span className="campo-error">{campos.nombre}</span>}</div>
-      <div className="campo"><label htmlFor="pol-dir">Dirección *</label><input id="pol-dir" className="control" value={direccion} onChange={(e) => setDireccion(e.target.value)} aria-invalid={!!campos.direccion} />
+      <div className="campo"><label htmlFor="pol-dir">Dirección <Obligatorio /></label><input id="pol-dir" className="control" value={direccion} onChange={(e) => setDireccion(e.target.value)} aria-invalid={!!campos.direccion} />
         {campos.direccion && <span className="campo-error">{campos.direccion}</span>}</div>
-      <div className="campo"><label htmlFor="pol-com">Comuna *</label><input id="pol-com" className="control" value={comuna} onChange={(e) => setComuna(e.target.value)} aria-invalid={!!campos.comuna} />
+      <div className="campo"><label htmlFor="pol-com">Comuna <Obligatorio /></label><input id="pol-com" className="control" value={comuna} onChange={(e) => setComuna(e.target.value)} aria-invalid={!!campos.comuna} />
         {campos.comuna && <span className="campo-error">{campos.comuna}</span>}</div>
       {actual ? (
         <>

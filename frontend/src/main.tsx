@@ -12,6 +12,7 @@ import './compartido/estilos.css';
 import { App } from './App';
 import { ProveedorSesion } from './compartido/sesion';
 import { ErrorDeApi } from './compartido/api';
+import { ProveedorAvisos } from './compartido/avisos';
 
 const cliente = new QueryClient({
   defaultOptions: {
@@ -28,7 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={cliente}>
       <BrowserRouter>
         <ProveedorSesion>
-          <App />
+          <ProveedorAvisos>
+            <App />
+          </ProveedorAvisos>
         </ProveedorSesion>
       </BrowserRouter>
     </QueryClientProvider>
