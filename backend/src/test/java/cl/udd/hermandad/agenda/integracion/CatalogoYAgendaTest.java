@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +160,76 @@ class CatalogoYAgendaTest extends PruebaIntegracion {
         esc.como(b.admin());
         assertThatThrownBy(() -> agenda.crearBloque(new DatosBloque(b.idProfesional(), b.idBox2(), 1, LocalTime.of(9, 40),
                 LocalTime.of(11, 0), esc.dia(), esc.dia().plusWeeks(1))))
-                .isInstanceOfSatisfying(ErrorNegocio.class, e -> assertThat(e.getCodigo()).isEqualTo("BLOQUE_SUPERPUESTO"));
+                .isInstanceOfSatisfying(ErrorNegocio.class, e -> {
+                    assertThat(e.getCodigo()).isEqualTo("BLOQUE_SUPERPUESTO");
+                    assertThat(e.getMessage()).contains("lunes de 09:00 a 10:00");
+                });
+    }
+
+    /** D-10: un bloque modificado deja el anterior cerrado (vigencia hasta ayer). No debe estorbar ni duplicar cupos. */
+    @Test
+    void d10_recrearUnBloqueDespuesDeModificarloYDesactivarloNoChocaConElCerrado() {
+        var b = esc.base();
+        esc.bloque(b, "09:00", "10:00");
+        Integer original = jdbc.queryForObject("select id_bloque from bloque_horario where id_profesional = ?", Integer.class, b.idProfesional());
+        reloj.fijarEn(esc.dia().atTime(8, 0)); // el bloque ya empezó: al modificarlo se cierra en vez de desactivarse
+        esc.como(b.admin());
+        var nuevo = agenda.modificarBloque(original, new DatosBloque(b.idProfesional(), b.idBox(), 1, LocalTime.of(9, 0),
+                LocalTime.of(9, 40), esc.dia().minusDays(7), esc.dia().plusWeeks(4)));
+        assertThat(contar("select activo from bloque_horario where id_bloque = ?", original)).isEqualTo(1);
+        assertThat(agenda.bloquesDelProfesional(b.idProfesional())).extracting(x -> x.getId()).containsExactly(nuevo.getId());
+
+        agenda.desactivarBloque(nuevo.getId());
+        var recreado = agenda.crearBloque(new DatosBloque(b.idProfesional(), b.idBox(), 1, LocalTime.of(9, 0), LocalTime.of(10, 0),
+                esc.dia().minusDays(7), esc.dia().plusWeeks(4)));
+        assertThat(recreado.getVigenciaDesde()).isEqualTo(esc.dia());
+        assertThat(agenda.agendaSemanal(b.idProfesional(), b.idPoliclinico(), esc.dia()))
+                .hasSize(3).allMatch(c -> c.estado() == EstadoCupo.DISPONIBLE);
+    }
+
+    @Test
+    void d10_laSerieUsaLosCuposDelBloqueNuevoYNoLosDelCerrado() {
+        var b = esc.base();
+        esc.bloque(b, "09:00", "10:00");
+        Integer original = jdbc.queryForObject("select id_bloque from bloque_horario where id_profesional = ?", Integer.class, b.idProfesional());
+        reloj.fijarEn(esc.dia().atTime(8, 0));
+        esc.como(b.admin());
+        var nuevo = agenda.modificarBloque(original, new DatosBloque(b.idProfesional(), b.idBox(), 1, LocalTime.of(9, 0),
+                LocalTime.of(9, 40), esc.dia().minusDays(7), esc.dia().plusWeeks(4)));
+        Long primero = jdbc.queryForObject("select id_cupo from cupo where id_bloque = ? and fecha = ? and hora_inicio = '09:00'",
+                Long.class, nuevo.getId(), esc.dia());
+        esc.como(b.tens());
+        var serie = agendamiento.previsualizarSerie(b.idProfesional(), primero, 3);
+        assertThat(serie.sinCupo()).isEmpty();
+        assertThat(serie.conCupo()).hasSize(3);
+    }
+
+    @Test
+    void d10_alVolverAExtenderLaVigenciaLosCuposVuelvenAOfrecerse() {
+        var b = esc.base();
+        esc.bloque(b, "09:00", "10:00");
+        Integer idBloque = jdbc.queryForObject("select id_bloque from bloque_horario where id_profesional = ?", Integer.class, b.idProfesional());
+        esc.como(b.admin());
+        LocalDate semanaSiguiente = esc.dia().plusWeeks(1);
+        agenda.modificarBloque(idBloque, new DatosBloque(b.idProfesional(), b.idBox(), 1, LocalTime.of(9, 0), LocalTime.of(10, 0),
+                esc.dia().minusDays(1), esc.dia()));
+        assertThat(contar("select count(*) from cupo where id_bloque = ? and fecha = ? and id_bloqueo is not null", idBloque, semanaSiguiente)).isEqualTo(3);
+        agenda.modificarBloque(idBloque, new DatosBloque(b.idProfesional(), b.idBox(), 1, LocalTime.of(9, 0), LocalTime.of(10, 0),
+                esc.dia().minusDays(1), esc.dia().plusWeeks(4)));
+        assertThat(contar("select count(*) from cupo where id_bloque = ? and fecha = ? and id_bloqueo is not null", idBloque, semanaSiguiente)).isZero();
+        assertThat(contar("select count(*) from cupo where id_bloque = ? and fecha = ?", idBloque, semanaSiguiente)).isEqualTo(3);
+    }
+
+    @Test
+    void desactivarUnBloqueConservaSuHistorialEnLaVistaSemanal() {
+        var b = esc.base();
+        esc.bloque(b, "09:00", "10:00");
+        Integer idBloque = jdbc.queryForObject("select id_bloque from bloque_horario where id_profesional = ?", Integer.class, b.idProfesional());
+        reloj.fijarEn(esc.dia().plusDays(1).atTime(8, 0)); // el lunes de prueba ya pasó
+        esc.como(b.admin());
+        agenda.desactivarBloque(idBloque);
+        assertThat(agenda.agendaSemanal(b.idProfesional(), b.idPoliclinico(), esc.dia())).hasSize(3);
+        assertThat(agenda.agendaSemanal(b.idProfesional(), b.idPoliclinico(), esc.dia().plusWeeks(1))).isEmpty();
     }
 
     @Test

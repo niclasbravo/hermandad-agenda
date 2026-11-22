@@ -11,8 +11,10 @@ import java.util.Optional;
 @Repository
 public class ListaEsperaRepositorySQL implements IListaEsperaRepository {
 
+    /** Incluye los movimientos: el controlador los lee fuera de la transacción (open-in-view desactivado). */
     private static final String FETCH = "select i from InscripcionEspera i join fetch i.paciente pa "
-            + "left join fetch pa.adultoResponsable join fetch i.policlinico pol join fetch i.profesion pr ";
+            + "left join fetch pa.adultoResponsable join fetch i.policlinico pol join fetch i.profesion pr "
+            + "left join fetch i.movimientos ";
 
     @PersistenceContext
     private EntityManager em;

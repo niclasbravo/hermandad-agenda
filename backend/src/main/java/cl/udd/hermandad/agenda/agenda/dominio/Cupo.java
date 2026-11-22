@@ -87,6 +87,10 @@ public class Cupo {
         this.bloqueo = bloqueo;
     }
 
+    public void desbloquear() {
+        this.bloqueo = null;
+    }
+
     public void habilitarWeb(boolean habilitado) {
         this.habilitadoWeb = habilitado;
     }

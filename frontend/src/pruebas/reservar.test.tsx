@@ -62,6 +62,31 @@ describe('Reservar cita: recorrido A (CU-04)', () => {
     expect(screen.getByText('09:40 (20 minutos)')).toBeInTheDocument();
   });
 
+  it('quita de la lista de espera aunque una inscripción ya estuviera retirada (doble clic)', async () => {
+    base();
+    const retiradas: string[] = [];
+    servidor.use(
+      http.get('/api/cupos/disponibles', () => HttpResponse.json([cupo(100, '09:40')])),
+      http.post('/api/citas', () => HttpResponse.json({ cita: cita({ id: 50, fecha: manana(), horaInicio: '09:40', idCupo: 100 }), inscripcionesEnEspera: [7, 8] }, { status: 201 })),
+      http.post('/api/lista-espera/:id/retirar', ({ params }) => {
+        retiradas.push(String(params.id));
+        return params.id === '7'
+          ? HttpResponse.json({ codigo: 'INSCRIPCION_RETIRADA', mensaje: 'Esta persona ya no está en la lista de espera.', detalles: {} }, { status: 422 })
+          : HttpResponse.json({ id: 8 });
+      }),
+    );
+    const u = userEvent.setup();
+    renderizar('/reservar-cita?paciente=1');
+    await u.selectOptions(await screen.findByLabelText('Profesión *'), 'Medicina');
+    await u.click(screen.getByRole('button', { name: /Buscar cupos/ }));
+    await u.click(await screen.findByRole('button', { name: /09:40/ }));
+    await u.click(screen.getByRole('button', { name: /Confirmar reserva/ }));
+    await u.click(await screen.findByRole('button', { name: 'Quitar de la lista de espera' }));
+    expect(await screen.findByText(/Se quitó de la lista de espera/)).toBeInTheDocument();
+    expect(retiradas).toEqual(['7', '8']);
+    expect(screen.queryByText('Esta persona ya no está en la lista de espera.')).not.toBeInTheDocument();
+  });
+
   it('si otra persona tomó el horario muestra el 409 en lenguaje simple', async () => {
     base();
     servidor.use(

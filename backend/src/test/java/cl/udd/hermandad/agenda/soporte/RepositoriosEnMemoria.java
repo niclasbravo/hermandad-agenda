@@ -148,7 +148,8 @@ public final class RepositoriosEnMemoria {
         }
 
         @Override
-        public List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta) {
+        public List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta,
+                                     LocalDate hoy) {
             return datos.values().stream().filter(c -> !c.getFecha().isBefore(desde) && !c.getFecha().isAfter(hasta)).toList();
         }
 

@@ -23,6 +23,7 @@ import cl.udd.hermandad.agenda.seguridad.aplicacion.AuditoriaService;
 import cl.udd.hermandad.agenda.seguridad.dominio.IUsuarioRepository;
 import cl.udd.hermandad.agenda.seguridad.dominio.RegistroAuditoria;
 import cl.udd.hermandad.agenda.seguridad.dominio.Usuario;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -118,8 +119,8 @@ public class AsistenciaController {
 
     @PostMapping("/citas/{id}/asistencia")
     @PreAuthorize("hasRole('TENS')")
-    public FilaCita asistencia(@PathVariable Long id, @RequestBody AsistenciaRequest r) {
-        return fila(servicio.registrarAsistencia(id, Boolean.TRUE.equals(r.asistio())));
+    public FilaCita asistencia(@PathVariable Long id, @Valid @RequestBody AsistenciaRequest r) {
+        return fila(servicio.registrarAsistencia(id, r.asistio()));
     }
 
     @GetMapping("/citas/{id}")

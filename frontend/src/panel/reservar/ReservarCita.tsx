@@ -103,9 +103,19 @@ export function ReservarCita() {
   const retirar = useMutation({
     mutationFn: async () => {
       const ids = hecho!.inscripciones.length ? hecho!.inscripciones : inscripcionAviso ? [Number(inscripcionAviso)] : [];
-      for (const i of ids) await api.post(`/api/lista-espera/${i}/retirar`, { motivo: 'HORA_ASIGNADA', idCita: hecho!.citas[0].id });
+      // Se intenta con todas aunque una falle; si ya estaba retirada (p. ej. doble clic), cuenta como hecha.
+      let primerError: unknown = null;
+      for (const i of ids) {
+        try {
+          await api.post(`/api/lista-espera/${i}/retirar`, { motivo: 'HORA_ASIGNADA', idCita: hecho!.citas[0].id });
+        } catch (e) {
+          if (!(e instanceof ErrorDeApi && e.codigo === 'INSCRIPCION_RETIRADA') && !primerError) primerError = e;
+        }
+      }
+      if (primerError) throw primerError;
     },
-    onSuccess: () => { invalidar(); setRetirada(true); },
+    onSuccess: () => setRetirada(true),
+    onSettled: () => invalidar(),
   });
 
   const buscarPaciente = async (e: FormEvent) => {
@@ -127,7 +137,7 @@ export function ReservarCita() {
   const p = paciente.data;
 
   if (hecho) return <ReservaHecha hecho={hecho} paciente={p!} serie={serie} retirada={retirada}
-    puedeRetirar={hecho.inscripciones.length > 0 || !!inscripcionAviso} alRetirar={() => retirar.mutate()} errorRetiro={retirar.error}
+    puedeRetirar={hecho.inscripciones.length > 0 || !!inscripcionAviso} alRetirar={() => retirar.mutate()} retirando={retirar.isPending} errorRetiro={retirar.error}
     nombreUsuario={usuario?.nombre ?? ''} alOtra={() => { setHecho(null); setElegido(null); setRetirada(false); cupos.refetch(); }} />;
 
   return (
@@ -309,8 +319,8 @@ export function ReservarCita() {
   );
 }
 
-function ReservaHecha({ hecho, paciente, serie, retirada, puedeRetirar, alRetirar, errorRetiro, nombreUsuario, alOtra }: {
-  hecho: { citas: Cita[] }; paciente: Paciente; serie: boolean; retirada: boolean; puedeRetirar: boolean; alRetirar: () => void;
+function ReservaHecha({ hecho, paciente, serie, retirada, puedeRetirar, alRetirar, retirando, errorRetiro, nombreUsuario, alOtra }: {
+  hecho: { citas: Cita[] }; paciente: Paciente; serie: boolean; retirada: boolean; puedeRetirar: boolean; alRetirar: () => void; retirando: boolean;
   errorRetiro: unknown; nombreUsuario: string; alOtra: () => void;
 }) {
   const c = hecho.citas[0];
@@ -336,7 +346,7 @@ function ReservaHecha({ hecho, paciente, serie, retirada, puedeRetirar, alRetira
           {puedeRetirar && !retirada && (
             <div className="aviso aviso--alerta fila fila--entre">
               <span>{paciente.nombres.split(' ')[0]} estaba en la lista de espera de {c.profesion}. ¿Quitarla de la lista porque se le asignó una hora?</span>
-              <button className="boton boton--compacto" onClick={alRetirar}>Quitar de la lista de espera</button>
+              <button className="boton boton--compacto" onClick={alRetirar} disabled={retirando}>Quitar de la lista de espera</button>
             </div>
           )}
           {retirada && <div className="aviso aviso--exito">Se quitó de la lista de espera con el motivo «Se le asignó una hora».</div>}

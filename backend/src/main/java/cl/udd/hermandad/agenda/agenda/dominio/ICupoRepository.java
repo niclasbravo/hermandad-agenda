@@ -26,8 +26,8 @@ public interface ICupoRepository {
     Cupo guardar(Cupo cupo);
     Bloqueo guardarBloqueo(Bloqueo bloqueo);
     List<Cupo> delBloque(Integer idBloque, LocalDate desde, LocalDate hasta);
-    /** Cupos de bloques activos para la vista semanal; los filtros nulos no se aplican. */
-    List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta);
+    /** Vista semanal: el historial pasado de todos los bloques y, desde hoy, los cupos vigentes de bloques activos. Los filtros nulos no se aplican. */
+    List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta, LocalDate hoy);
     Optional<Cupo> buscarPorProfesionalFechaHora(Integer idProfesional, LocalDate fecha, LocalTime hora);
     List<Cupo> futurosDeBloquesActivos(LocalDate desde);
     /** Citas vigentes de esos cupos, con los datos mínimos para mostrarlas (D-10). */
