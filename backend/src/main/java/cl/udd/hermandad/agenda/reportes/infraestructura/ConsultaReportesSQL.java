@@ -102,6 +102,19 @@ public class ConsultaReportesSQL implements IConsultaReportes {
     }
 
     @Override
+    public long enEsperaTotal(FiltroReporte f) {
+        String sql = """
+                select count(*) from inscripcion_espera ie
+                where ie.estado = 'EN_ESPERA' and (:pol is null or ie.id_policlinico = :pol)
+                  and (:pro is null or exists (select 1 from profesional p join profesional_policlinico pp
+                        on pp.id_profesional = p.id_profesional
+                        where p.id_profesional = :pro and p.id_profesion = ie.id_profesion
+                          and pp.id_policlinico = ie.id_policlinico))""";
+        return num(em.createNativeQuery(sql).setParameter("pol", f.idPoliclinico()).setParameter("pro", f.idProfesional())
+                .getSingleResult()).longValue();
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public List<PacienteAtendido> pacientesAtendidos(FiltroReporte f) {
         String sql = "select distinct pa.id_paciente, pa.fecha_nacimiento, pa.genero, pa.nacionalidad from cita ci " + JOINS

@@ -151,6 +151,27 @@ class AsistenciaYReportesTest extends PruebaIntegracion {
         assertThat(fila.demanda()).isEqualTo(4);
     }
 
+    /** Con dos profesionales de la misma profesión, la persona en espera aparece en ambas filas pero cuenta una vez. */
+    @Test
+    void laListaDeEsperaSeCuentaUnaSolaVezEnElTotalDeDemanda() {
+        var d = datos();
+        int otro = esc.profesional(d.b().idProfesion(), d.b().idPoliclinico(), "Andrés", "Vidal");
+        esc.como(d.b().admin());
+        var r = reportes.demanda(filtro(d));
+        assertThat(r.filas().stream().filter(f -> f.idProfesional() == otro).findFirst().orElseThrow().enEspera()).isEqualTo(1);
+        assertThat(r.enEspera()).isEqualTo(1);
+        assertThat(r.demanda()).isEqualTo(4);
+    }
+
+    @Test
+    void unPeriodoSinReservasNoTieneDatosAunqueHayaPersonasEsperando() {
+        var d = datos();
+        esc.como(d.b().admin());
+        var r = reportes.demanda(new FiltroReporte(esc.dia().plusMonths(6), esc.dia().plusMonths(6), d.b().idPoliclinico(), null));
+        assertThat(r.enEspera()).isEqualTo(1);
+        assertThat(r.sinDatos()).isTrue();
+    }
+
     @Test
     void caRf30_1_lasCategoriasSumanElTotal() {
         var d = datos();
