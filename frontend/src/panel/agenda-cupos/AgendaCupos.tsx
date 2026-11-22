@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Check, ChevronLeft, ChevronRight, Lock, Pencil, Plus, Settings2, X } from 'lucide-react';
 import { api, consulta, ErrorDeApi } from '../../compartido/api';
-import { Cargando, MensajeError, Modal, Vacio } from '../../compartido/componentes';
+import { Cargando, MensajeError, Modal, Obligatorio, Vacio } from '../../compartido/componentes';
 import { DIAS_SEMANA, diaCorto, fechaCorta, fechaLarga, hora, hoyIso, lunesDe, rangoSemana, sumarDias } from '../../compartido/formato';
 import type { CitaAfectada, CupoVista, Parametro, Profesional } from '../../compartido/tipos';
 import { Cabecera } from '../DisenoPanel';
@@ -243,25 +243,25 @@ function LateralBloque({ bloque, profesionales, idProfesionalInicial, alCerrar, 
     <aside className="lateral" aria-label={bloque ? 'Modificar bloque horario' : 'Nuevo bloque horario'}>
       <div className="fila fila--entre"><h2>{bloque ? 'Modificar bloque horario' : 'Nuevo bloque horario'}</h2>
         <button className="boton boton--texto" onClick={alCerrar} aria-label="Cerrar"><X size={22} /></button></div>
-      <div className="campo"><label htmlFor="b-prof">Profesional</label>
+      <div className="campo"><label htmlFor="b-prof">Profesional <Obligatorio /></label>
         <select id="b-prof" className="control" value={d.idProfesional} onChange={(e) => setD((x) => ({ ...x, idProfesional: Number(e.target.value), idBox: '' }))}>
           <option value="">Elige un profesional</option>
           {profesionales.map((p) => <option key={p.id} value={p.id}>{p.nombreCompleto} ({p.profesion.nombre})</option>)}
         </select></div>
-      <div className="campo"><label htmlFor="b-box">Policlínico y box</label>
+      <div className="campo"><label htmlFor="b-box">Policlínico y box <Obligatorio /></label>
         <select id="b-box" className="control" value={d.idBox} onChange={(e) => set('idBox', Number(e.target.value))}>
           {opcionesBox.map((o) => <option key={o.id} value={o.id}>{o.texto}</option>)}
         </select></div>
-      <div className="campo"><label htmlFor="b-dia">Día</label>
+      <div className="campo"><label htmlFor="b-dia">Día <Obligatorio /></label>
         <select id="b-dia" className="control" value={d.diaSemana} onChange={(e) => set('diaSemana', Number(e.target.value))}>
           {DIAS_SEMANA.map((n, i) => <option key={n} value={i + 1}>{n}</option>)}
         </select></div>
       <div className="grilla-2">
-        <div className="campo"><label htmlFor="b-ini">Hora de inicio</label><input id="b-ini" type="time" className="control" value={d.horaInicio} onChange={(e) => set('horaInicio', e.target.value)} /></div>
-        <div className="campo"><label htmlFor="b-fin">Hora de término</label><input id="b-fin" type="time" className="control" value={d.horaTermino} onChange={(e) => set('horaTermino', e.target.value)} /></div>
+        <div className="campo"><label htmlFor="b-ini">Hora de inicio <Obligatorio /></label><input id="b-ini" type="time" className="control" value={d.horaInicio} onChange={(e) => set('horaInicio', e.target.value)} /></div>
+        <div className="campo"><label htmlFor="b-fin">Hora de término <Obligatorio /></label><input id="b-fin" type="time" className="control" value={d.horaTermino} onChange={(e) => set('horaTermino', e.target.value)} /></div>
       </div>
       <div className="grilla-2">
-        <div className="campo"><label htmlFor="b-desde">Vigente desde</label><input id="b-desde" type="date" className="control" value={d.vigenciaDesde} onChange={(e) => set('vigenciaDesde', e.target.value)} /></div>
+        <div className="campo"><label htmlFor="b-desde">Vigente desde <Obligatorio /></label><input id="b-desde" type="date" className="control" value={d.vigenciaDesde} onChange={(e) => set('vigenciaDesde', e.target.value)} /></div>
         <div className="campo"><label htmlFor="b-hasta">Hasta</label><input id="b-hasta" type="date" className="control" value={d.vigenciaHasta} onChange={(e) => set('vigenciaHasta', e.target.value)} /></div>
       </div>
       {previa.data && (
@@ -302,7 +302,7 @@ function ModalBloquear({ cupo, alCerrar }: { cupo: CupoVista; alCerrar: () => vo
       <label className="casilla"><input type="checkbox" checked={rango} onChange={(e) => setRango(e.target.checked)} /> Bloquear un rango horario de ese día</label>
       {rango && <div className="campo"><label htmlFor="bl-hasta">Hasta</label><input id="bl-hasta" type="time" className="control" value={hasta} onChange={(e) => setHasta(e.target.value)} /></div>}
       <div className="campo">
-        <label htmlFor="bl-motivo">Motivo *</label>
+        <label htmlFor="bl-motivo">Motivo <Obligatorio /></label>
         <input id="bl-motivo" className="control" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: Reunión clínica"
           aria-invalid={!!error} aria-describedby={error ? 'bl-motivo-error' : undefined} />
         {error && <span id="bl-motivo-error" className="campo-error">{error}</span>}

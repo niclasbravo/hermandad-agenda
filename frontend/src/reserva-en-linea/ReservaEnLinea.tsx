@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarCheck, Check, FileText, Info, MessageCircle, Upload } from 'lucide-react';
 import { api, consulta, ErrorDeApi } from '../compartido/api';
-import { Cargando, MensajeError } from '../compartido/componentes';
+import { Cargando, Etiqueta, MensajeError, Obligatorio } from '../compartido/componentes';
 import { edad, fechaLarga, hora, hoyIso } from '../compartido/formato';
 import { formatearRut, rutValido } from '../compartido/rut';
 import { GENEROS, RELACIONES } from '../panel/pacientes/esquemaPaciente';
@@ -93,17 +93,17 @@ function PasoIdentificacion({ alListo }: { alListo: (i: Identificacion, nacimien
         <h1>Reserva tu hora</h1>
         <p className="texto-secundario">Ingresa el RUT y la fecha de nacimiento de la persona que se va a atender. Si reservas para un familiar, usa sus datos.</p>
         <div className="grilla-2">
-          <div className="campo"><label htmlFor="id-tipo">Tipo de documento</label>
+          <div className="campo"><label htmlFor="id-tipo">Tipo de documento <Obligatorio /></label>
             <select id="id-tipo" className="control" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)}>
               <option value="RUT">RUT</option><option value="PASAPORTE">Pasaporte</option><option value="OTRO">Otro documento</option>
             </select></div>
-          <div className="campo"><label htmlFor="id-num">{tipo === 'RUT' ? 'RUT' : 'Número de documento'}</label>
+          <div className="campo"><label htmlFor="id-num">{tipo === 'RUT' ? 'RUT' : 'Número de documento'} <Obligatorio /></label>
             <input id="id-num" className="control" value={numero} placeholder={tipo === 'RUT' ? '12.345.678-5' : ''}
               onChange={(e) => setNumero(e.target.value)} onBlur={() => tipo === 'RUT' && rutValido(numero) && setNumero(formatearRut(numero))}
               aria-invalid={!!errores.numero} aria-describedby={errores.numero ? 'id-num-error' : undefined} autoComplete="off" />
             {errores.numero && <span id="id-num-error" className="campo-error">{errores.numero}</span>}</div>
         </div>
-        <div className="campo" style={{ maxWidth: 280 }}><label htmlFor="id-fecha">Fecha de nacimiento</label>
+        <div className="campo" style={{ maxWidth: 280 }}><label htmlFor="id-fecha">Fecha de nacimiento <Obligatorio /></label>
           <input id="id-fecha" type="date" className="control" value={fecha} max={hoyIso()} onChange={(e) => setFecha(e.target.value)}
             aria-invalid={!!errores.fecha} aria-describedby={errores.fecha ? 'id-fecha-error' : undefined} />
           {errores.fecha && <span id="id-fecha-error" className="campo-error">{errores.fecha}</span>}</div>
@@ -159,12 +159,12 @@ function PasoDatos({ token, nacimiento, alVolver, alListo, alVencer }: { token: 
     }
   };
   const campo = (k: keyof typeof d, etiqueta: string, props: Record<string, unknown> = {}) => (
-    <div className="campo"><label htmlFor={'nd-' + k}>{etiqueta}</label>
+    <div className="campo"><label htmlFor={'nd-' + k}><Etiqueta texto={etiqueta} /></label>
       <input id={'nd-' + k} className="control" value={d[k]} onChange={(e) => setD({ ...d, [k]: e.target.value })} aria-invalid={!!errores[k]} {...props} />
       {errores[k] && <span className="campo-error">{errores[k]}</span>}</div>
   );
   const campoA = (k: 'numeroDocumento' | 'nombreCompleto' | 'telefono', etiqueta: string, props: Record<string, unknown> = {}) => (
-    <div className="campo"><label htmlFor={'na-' + k}>{etiqueta}</label>
+    <div className="campo"><label htmlFor={'na-' + k}><Etiqueta texto={etiqueta} /></label>
       <input id={'na-' + k} className="control" value={a[k]} onChange={(e) => setA({ ...a, [k]: e.target.value })} aria-invalid={!!errores['adulto.' + k]} {...props} />
       {errores['adulto.' + k] && <span className="campo-error">{errores['adulto.' + k]}</span>}</div>
   );
@@ -175,24 +175,24 @@ function PasoDatos({ token, nacimiento, alVolver, alListo, alVencer }: { token: 
         <span>Completa los datos una sola vez. Quedarán guardados para tus próximas horas.</span>
       </div>
       <h2>Datos del paciente</h2>
-      <div className="grilla-2">{campo('nombres', 'Nombres', { autoComplete: 'given-name' })}{campo('apellidos', 'Apellidos', { autoComplete: 'family-name' })}</div>
-      <div className="grilla-2">{campo('telefonoCelular', 'Teléfono celular', { inputMode: 'tel', placeholder: '+56 9 1234 5678', autoComplete: 'tel' })}{campo('correo', 'Correo (opcional)', { type: 'email', autoComplete: 'email' })}</div>
+      <div className="grilla-2">{campo('nombres', 'Nombres *', { autoComplete: 'given-name' })}{campo('apellidos', 'Apellidos *', { autoComplete: 'family-name' })}</div>
+      <div className="grilla-2">{campo('telefonoCelular', 'Teléfono celular *', { inputMode: 'tel', placeholder: '+56 9 1234 5678', autoComplete: 'tel' })}{campo('correo', 'Correo (opcional)', { type: 'email', autoComplete: 'email' })}</div>
       <div className="grilla-3">
-        {campo('direccion', 'Dirección', { autoComplete: 'street-address' })}
-        <div className="campo"><label htmlFor="nd-genero">Género</label>
+        {campo('direccion', 'Dirección *', { autoComplete: 'street-address' })}
+        <div className="campo"><label htmlFor="nd-genero">Género <Obligatorio /></label>
           <select id="nd-genero" className="control" value={d.genero} onChange={(e) => setD({ ...d, genero: e.target.value })} aria-invalid={!!errores.genero}>
             <option value="">Elige una opción</option>{GENEROS.map((g) => <option key={g}>{g}</option>)}
           </select>{errores.genero && <span className="campo-error">{errores.genero}</span>}</div>
-        {campo('nacionalidad', 'Nacionalidad')}
+        {campo('nacionalidad', 'Nacionalidad *')}
       </div>
       <div className="fila fila--entre"><span>¿La persona es menor de edad? Si lo es, te pediremos los datos del adulto responsable.</span><span className={'chip ' + (menor ? 'chip--alerta' : 'chip--gris')}>{menor ? 'Sí' : 'No'}</span></div>
       {menor && (
         <section className="pila" aria-label="Datos del adulto responsable">
           <h2>Datos del adulto responsable</h2>
-          <div className="grilla-2">{campoA('nombreCompleto', 'Nombre completo')}{campoA('numeroDocumento', 'RUT', { placeholder: '12.345.678-5' })}</div>
+          <div className="grilla-2">{campoA('nombreCompleto', 'Nombre completo *')}{campoA('numeroDocumento', 'RUT *', { placeholder: '12.345.678-5' })}</div>
           <div className="grilla-2">
-            {campoA('telefono', 'Teléfono celular', { inputMode: 'tel', placeholder: '+56 9 1234 5678' })}
-            <div className="campo"><label htmlFor="na-relacion">Relación con el paciente</label>
+            {campoA('telefono', 'Teléfono celular *', { inputMode: 'tel', placeholder: '+56 9 1234 5678' })}
+            <div className="campo"><label htmlFor="na-relacion">Relación con el paciente <Obligatorio /></label>
               <select id="na-relacion" className="control" value={a.relacion} onChange={(e) => setA({ ...a, relacion: e.target.value })} aria-invalid={!!errores['adulto.relacion']}>
                 <option value="">Elige una opción</option>{RELACIONES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
               </select>{errores['adulto.relacion'] && <span className="campo-error">{errores['adulto.relacion']}</span>}</div>
@@ -251,11 +251,11 @@ function PasoElegir({ token, policlinicoInicial, alReservar, alVencer }: { token
       <section className="tarjeta tarjeta--padding pila">
         <h1>Elige tu hora</h1>
         <div className="grilla-3">
-          <div className="campo"><label htmlFor="e-pol">Policlínico</label>
+          <div className="campo"><label htmlFor="e-pol">Policlínico <Obligatorio /></label>
             <select id="e-pol" className="control" value={pol} onChange={(e) => { setPoliclinico(Number(e.target.value)); setElegido(null); setProfesional(''); }}>
               {policlinicos.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select></div>
-          <div className="campo"><label htmlFor="e-prof">Profesión</label>
+          <div className="campo"><label htmlFor="e-prof">Profesión <Obligatorio /></label>
             <select id="e-prof" className="control" value={profesion} onChange={(e) => { setProfesion(e.target.value ? Number(e.target.value) : ''); setElegido(null); setProfesional(''); }}>
               <option value="">Elige una atención</option>
               {profesiones.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}

@@ -3,12 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CalendarCheck, Check, Clock, MessageCircle, Search } from 'lucide-react';
 import { api, consulta, ErrorDeApi } from '../../compartido/api';
-import { Cargando, Iniciales, MensajeError } from '../../compartido/componentes';
+import { Cargando, Iniciales, MensajeError, Obligatorio } from '../../compartido/componentes';
 import { diaCorto, fechaCorta, fechaLarga, hora, hoyIso, lunesDe, sumarDias } from '../../compartido/formato';
 import { useSesion } from '../../compartido/sesion';
 import type { Cita, CupoVista, Paciente } from '../../compartido/tipos';
 import { Cabecera } from '../DisenoPanel';
 import { useInvalidarAgenda, usePoliclinicos, useProfesionales, useProfesiones } from '../consultas';
+import { VistaWhatsApp } from './VistaWhatsApp';
+import { useAviso } from '../../compartido/avisos';
 
 interface Previa { conCupo: { fecha: string; hora: string; idCupo: number }[]; sinCupo: { fecha: string; hora: string; motivo: string }[] }
 interface ResultadoReserva { cita: Cita; inscripcionesEnEspera: number[] }
@@ -32,6 +34,7 @@ export function ReservarCita() {
   const [cantidad, setCantidad] = useState(10);
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [aceptadas, setAceptadas] = useState<Set<string>>(new Set());
+  const avisar = useAviso();
   const [hecho, setHecho] = useState<{ citas: Cita[]; inscripciones: number[] } | null>(null);
   const [inscrita, setInscrita] = useState(false);
   const [retirada, setRetirada] = useState(false);
@@ -83,7 +86,10 @@ export function ReservarCita() {
       const r = await api.post<ResultadoReserva>('/api/citas', { idPaciente, idCupo: elegido!.id });
       return { citas: [r.cita], inscripciones: r.inscripcionesEnEspera };
     },
-    onSuccess: (r) => { invalidar(); setHecho(r); },
+    onSuccess: (r) => {
+      invalidar(); setHecho(r);
+      avisar(r.citas.length > 1 ? `Serie de ${r.citas.length} sesiones reservada` : 'Cita reservada', { detalle: 'La confirmación por WhatsApp sale en menos de un minuto.' });
+    },
     onError: (e) => { if (e instanceof ErrorDeApi && e.estado === 409) { cupos.refetch(); setElegido(null); } },
   });
   const previsualizar = useMutation({
@@ -130,7 +136,7 @@ export function ReservarCita() {
       <div className="cuerpo">
         {!p ? (
           <form className="tarjeta tarjeta--padding pila--chica" onSubmit={buscarPaciente} style={{ maxWidth: 640 }}>
-            <label className="etiqueta" htmlFor="rut-reserva">Paciente</label>
+            <label className="etiqueta" htmlFor="rut-reserva">Paciente <Obligatorio /></label>
             <div className="fila" style={{ flexWrap: 'nowrap' }}>
               <input id="rut-reserva" className="control" placeholder="RUT del paciente" value={rut} onChange={(e) => setRut(e.target.value)} autoFocus />
               <button className="boton" type="submit"><Search size={20} aria-hidden="true" /> Buscar</button>
@@ -159,13 +165,13 @@ export function ReservarCita() {
         {p && (
           <form className="grilla-4" style={{ gridTemplateColumns: 'repeat(4, minmax(0,1fr)) auto', alignItems: 'end' }} onSubmit={buscarCupos}>
             <div className="campo">
-              <label htmlFor="r-pol">Policlínico</label>
+              <label htmlFor="r-pol">Policlínico <Obligatorio /></label>
               <select id="r-pol" className="control" value={policlinico} onChange={(e) => { setPoliclinico(Number(e.target.value)); setProfesional(''); }}>
                 {policlinicos.data?.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
               </select>
             </div>
             <div className="campo">
-              <label htmlFor="r-prof">Profesión</label>
+              <label htmlFor="r-prof">Profesión <Obligatorio /></label>
               <select id="r-prof" className="control" value={profesion} onChange={(e) => { setProfesion(e.target.value ? Number(e.target.value) : ''); setProfesional(''); }}>
                 <option value="">Elige una profesión</option>
                 {profesiones.data?.filter((x) => x.duracionMin != null).map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
@@ -313,6 +319,7 @@ function ReservaHecha({ hecho, paciente, serie, retirada, puedeRetirar, alRetira
     <>
       <Cabecera titulo={serie ? 'Serie reservada' : 'Cita reservada'} subtitulo="La confirmación se envía automáticamente al paciente" />
       <div className="cuerpo">
+        <div className="reserva-hecha">
         <section className="tarjeta tarjeta--padding pila" style={{ maxWidth: 760 }}>
           <div className="fila"><span className="iniciales"><CalendarCheck size={20} /></span><h2>{serie ? 'Serie confirmada' : 'Reserva confirmada'}</h2></div>
           <div className="texto-fuerte" style={{ fontSize: '1.25rem' }}>
@@ -340,6 +347,8 @@ function ReservaHecha({ hecho, paciente, serie, retirada, puedeRetirar, alRetira
             <button className="boton boton--texto" onClick={alOtra}>Reservar otra hora</button>
           </div>
         </section>
+        <VistaWhatsApp cita={c} telefono={paciente.telefonoFormateado} />
+        </div>
       </div>
     </>
   );

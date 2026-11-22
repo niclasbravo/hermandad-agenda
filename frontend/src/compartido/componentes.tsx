@@ -3,26 +3,49 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import type { EstadoCita, EstadoConfirmacion } from './tipos';
 import { ErrorDeApi } from './api';
 
-/** Logo institucional. TODO (DECISIONES): reemplazar por frontend/public/logo.png descargado del Figma. */
-export function Logo({ compacto = false }: { compacto?: boolean }) {
+const ANCHO_LOGO = { compacto: 196, normal: 250, grande: 360 } as const;
+
+/** Logo oficial de la Hermandad de Dolores (frontend/public/logo.png, PNG con fondo transparente; DI-36). */
+export function Logo({ compacto = false, tamano }: { compacto?: boolean; tamano?: keyof typeof ANCHO_LOGO }) {
+  const ancho = ANCHO_LOGO[tamano ?? (compacto ? 'compacto' : 'normal')];
   return (
-    <div className="fila" style={{ gap: 10, flexWrap: 'nowrap' }} aria-label="Instituto de Caridad Hermandad de Dolores, más de 200 años al servicio de Chile">
-      <svg width={compacto ? 40 : 52} height={compacto ? 40 : 52} viewBox="0 0 52 52" aria-hidden="true">
-        <circle cx="26" cy="26" r="24" fill="#fff" stroke="#5b6472" strokeWidth="2" />
-        <circle cx="26" cy="26" r="17" fill="none" stroke="#5b6472" strokeWidth="1" strokeDasharray="2 2" />
-        <path d="M26 13 L36 21 L33 36 L19 36 L16 21 Z" fill="none" stroke="#2b2f36" strokeWidth="1.6" />
-        <path d="M26 19 v12 M21 25 h10" stroke="#00687a" strokeWidth="2.2" strokeLinecap="round" />
-      </svg>
-      <div style={{ lineHeight: 1.1 }}>
-        <div style={{ color: '#1a8fa3', fontWeight: 800, fontSize: compacto ? 11 : 13, letterSpacing: '.01em' }}>INSTITUTO DE CARIDAD</div>
-        <div style={{ color: '#1a8fa3', fontWeight: 800, fontSize: compacto ? 11 : 13, letterSpacing: '.01em' }}>HERMANDAD DE DOLORES</div>
-        <div style={{ color: '#1a8fa3', fontWeight: 600, fontSize: compacto ? 8.5 : 10 }}>+200 Años al servicio de Chile</div>
-      </div>
-    </div>
+    <img src="/logo.png" width={ancho} height={Math.round(ancho * 162 / 600)} className="logo"
+      alt="Instituto de Caridad Hermandad de Dolores, más de 200 años al servicio de Chile" />
   );
 }
 
-export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
+/** Marca de campo obligatorio. El asterisco es visual; el control lleva aria-required para los lectores de pantalla. */
+export function Obligatorio() {
+  return <span className="obligatorio" aria-hidden="true">*</span>;
+}
+
+/** Texto de etiqueta que termina en « *» (convención de los formularios) → texto + marca de obligatorio. */
+export function Etiqueta({ texto }: { texto: string }) {
+  return texto.endsWith(' *') ? <>{texto.slice(0, -2)} <Obligatorio /></> : <>{texto}</>;
+}
+
+/**
+ * Indicador de carga. Con `forma`, muestra siluetas con la forma del contenido que viene (tabla o tarjetas):
+ * la pantalla no salta al llegar los datos y la espera se percibe más corta. Sin `forma`, el texto con ícono de siempre.
+ */
+export function Cargando({ texto = 'Cargando…', forma }: { texto?: string; forma?: 'tabla' | 'tarjetas' }) {
+  if (forma) {
+    return (
+      <div className="siluetas" role="status" aria-label={texto}>
+        {forma === 'tarjetas' && (
+          <div className="grilla-4">{[0, 1, 2, 3].map((i) => <div key={i} className="silueta silueta--tarjeta" />)}</div>
+        )}
+        <div className="tarjeta siluetas__tabla">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="siluetas__fila">
+              <div className="silueta silueta--corta" /><div className="silueta silueta--circulo" />
+              <div className="silueta silueta--larga" /><div className="silueta silueta--media" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cargando" role="status">
       <Loader2 className="girar" size={20} aria-hidden="true" /> {texto}

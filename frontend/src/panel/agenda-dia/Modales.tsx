@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { MessageCircle, Phone, Sparkles, X, FileText } from 'lucide-react';
 import { api, ErrorDeApi } from '../../compartido/api';
-import { Cargando, ChipCita, ChipConfirmacion, MensajeError, Modal } from '../../compartido/componentes';
+import { Cargando, ChipCita, ChipConfirmacion, MensajeError, Modal, Obligatorio } from '../../compartido/componentes';
 import { capitalizar, diaCorto, fechaLarga, fechaHoraCorta, hora, hoyIso } from '../../compartido/formato';
 import type { Cita, DetalleCita, Documento } from '../../compartido/tipos';
 import { useInvalidarAgenda } from '../consultas';
+import { useAviso } from '../../compartido/avisos';
 
 function cuandoTexto(c: Cita) {
   return c.fecha === hoyIso() ? `hoy ${fechaLarga(c.fecha).toLowerCase()} a las ${hora(c.horaInicio)}` : `el ${fechaLarga(c.fecha).toLowerCase()} a las ${hora(c.horaInicio)}`;
@@ -15,9 +16,10 @@ function cuandoTexto(c: Cita) {
 export function ModalAnular({ cita, alCerrar, alAnular }: { cita: Cita; alCerrar: () => void; alAnular?: () => void }) {
   const [motivo, setMotivo] = useState('');
   const invalidar = useInvalidarAgenda();
+  const avisar = useAviso();
   const m = useMutation({
     mutationFn: () => api.post(`/api/citas/${cita.id}/anular`, { origen: 'TENS', motivo }),
-    onSuccess: () => { invalidar(); alAnular?.(); alCerrar(); },
+    onSuccess: () => { invalidar(); alAnular?.(); alCerrar(); avisar('Cita anulada', { detalle: 'Se avisó al paciente por WhatsApp y el cupo quedó libre.', tipo: 'info' }); },
   });
   return (
     <Modal titulo={`¿Anular la cita de ${cita.paciente}?`} alCerrar={alCerrar}
@@ -50,13 +52,14 @@ export function ModalConfirmacion({ cita, alCerrar }: { cita: Cita; alCerrar: ()
   const [resultado, setResultado] = useState<'CONFIRMO' | 'NO_ASISTIRA' | 'NO_CONTESTO' | ''>('');
   const [comentario, setComentario] = useState('');
   const [aviso, setAviso] = useState<string | null>(null);
+  const avisar = useAviso();
   const reenviar = useMutation({
     mutationFn: () => api.post<{ mensaje: string }>(`/api/citas/${cita.id}/reenviar-recordatorio`),
-    onSuccess: (r) => { setAviso(r.mensaje); detalle.refetch(); invalidar(); },
+    onSuccess: (r) => { setAviso(r.mensaje); detalle.refetch(); invalidar(); avisar('Recordatorio reenviado', { detalle: 'Sale por WhatsApp en menos de un minuto.' }); },
   });
   const guardar = useMutation({
     mutationFn: () => api.post(`/api/citas/${cita.id}/llamadas`, { resultado, comentario }),
-    onSuccess: () => { invalidar(); alCerrar(); },
+    onSuccess: () => { invalidar(); alCerrar(); avisar('Llamada registrada'); },
   });
   const mensajes = (detalle.data?.mensajes ?? []).filter((m) => m.destinatario === 'PACIENTE' && m.estado !== 'PROGRAMADO');
   return (
@@ -164,7 +167,7 @@ export function ModalVerificarEnLinea({ cita, alCerrar }: { cita: Cita; alCerrar
       <label className="casilla"><input type="checkbox" checked={fonasa} onChange={(e) => setFonasa(e.target.checked)} /> Certificado de afiliación a FONASA</label>
       <label className="casilla"><input type="checkbox" checked={cesfam} onChange={(e) => setCesfam(e.target.checked)} /> Certificado de inscripción en CESFAM</label>
       <div className="campo">
-        <label htmlFor="cesfam">CESFAM de inscripción</label>
+        <label htmlFor="cesfam">CESFAM de inscripción <Obligatorio /></label>
         <input id="cesfam" className="control" value={nombreCesfam} onChange={(e) => setNombreCesfam(e.target.value)} placeholder="Ej.: CESFAM Norte"
           aria-invalid={!!errorCampo} aria-describedby={errorCampo ? 'cesfam-error' : undefined} />
         {errorCampo && <span id="cesfam-error" className="campo-error">{errorCampo}</span>}

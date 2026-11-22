@@ -6,7 +6,8 @@ export async function ingresar(page: Page, usuario: string, perfil: 'TENS' | 'AD
   await page.goto('/ingreso');
   await page.getByLabel('Usuario').fill(usuario);
   await page.getByLabel('Contraseña').fill(CONTRASENA);
-  await page.getByRole('button', { name: perfil === 'TENS' ? 'Ingresar como TENS/TONS' : 'Ingresar como Administración' }).click();
+  void perfil; // el perfil lo decide la cuenta (P-00)
+  await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page.getByRole('navigation', { name: 'Menú principal' })).toBeVisible();
 }
 

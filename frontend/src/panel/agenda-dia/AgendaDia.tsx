@@ -10,6 +10,7 @@ import type { AgendaDia as Agenda, AvisoCupo, CeldaCupo, Cita, Columna, FilaCita
 import { Cabecera } from '../DisenoPanel';
 import { useInvalidarAgenda, usePoliclinicos } from '../consultas';
 import { LateralDetalleCita, ModalAnular, ModalConfirmacion, ModalVerificarEnLinea } from './Modales';
+import { useAviso } from '../../compartido/avisos';
 
 function ahoraHHMM() {
   const d = new Date();
@@ -54,9 +55,10 @@ export function AgendaDia() {
     enabled: esTens,
     refetchInterval: 60_000,
   });
+  const avisar = useAviso();
   const asistencia = useMutation({
     mutationFn: ({ id, asistio }: { id: number; asistio: boolean }) => api.post(`/api/citas/${id}/asistencia`, { asistio }),
-    onSuccess: invalidar,
+    onSuccess: (_r, v) => { invalidar(); avisar(v.asistio ? 'Asistencia registrada' : 'Inasistencia registrada', { tipo: v.asistio ? 'exito' : 'info' }); },
   });
 
   const r = agenda.data?.resumen;
@@ -104,7 +106,7 @@ export function AgendaDia() {
           <div><span className="chip chip--alerta">{r.pendientesVerificacion} {r.pendientesVerificacion === 1 ? 'reserva en línea pendiente' : 'reservas en línea pendientes'} de verificación</span></div>
         )}
         <MensajeError error={asistencia.error} />
-        {agenda.isLoading && <Cargando />}
+        {agenda.isLoading && <Cargando forma="tarjetas" texto="Cargando la agenda del día…" />}
         <MensajeError error={agenda.error} />
 
         {agenda.data && vista === 'LISTA' && (

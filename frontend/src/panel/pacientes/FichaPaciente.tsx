@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CalendarPlus, Check, ClipboardCheck, Pencil } from 'lucide-react';
 import { api } from '../../compartido/api';
-import { Cargando, ChipCita, MensajeError, Modal } from '../../compartido/componentes';
+import { Cargando, ChipCita, MensajeError, Modal, Obligatorio } from '../../compartido/componentes';
 import { fechaCorta, fechaDiaMes, hora, hoyIso } from '../../compartido/formato';
 import { useSesion } from '../../compartido/sesion';
 import type { Cita, Paciente } from '../../compartido/tipos';
@@ -152,13 +152,13 @@ function ModalRegistrarVerificacion({ paciente, alCerrar, alNoCumple }: { pacien
       <label className="casilla"><input type="checkbox" checked={cesfamOk} onChange={(e) => setCesfamOk(e.target.checked)} /> Certificado de inscripción en CESFAM</label>
       <div className="grilla-2">
         <div className="campo">
-          <label htmlFor="v-cesfam">CESFAM de inscripción *</label>
+          <label htmlFor="v-cesfam">CESFAM de inscripción <Obligatorio /></label>
           <input id="v-cesfam" className="control" value={cesfam} onChange={(e) => setCesfam(e.target.value)} placeholder="Ej.: CESFAM Norte"
             aria-invalid={!!errorCesfam} aria-describedby={errorCesfam ? 'v-cesfam-error' : undefined} />
           {errorCesfam && <span id="v-cesfam-error" className="campo-error">{errorCesfam}</span>}
         </div>
         <div className="campo">
-          <label htmlFor="v-fecha">Fecha de verificación</label>
+          <label htmlFor="v-fecha">Fecha de verificación <Obligatorio /></label>
           <input id="v-fecha" type="date" className="control" value={fecha} max={hoyIso()} onChange={(e) => setFecha(e.target.value)} />
         </div>
       </div>

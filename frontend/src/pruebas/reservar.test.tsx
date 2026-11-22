@@ -35,11 +35,11 @@ describe('Reservar cita: recorrido A (CU-04)', () => {
     );
     const u = userEvent.setup();
     renderizar('/reservar-cita');
-    await u.type(await screen.findByLabelText('Paciente'), '12.345.678-5');
-    await u.click(within(screen.getByLabelText('Paciente').closest('form')!).getByRole('button', { name: 'Buscar' }));
+    await u.type(await screen.findByLabelText('Paciente *'), '12.345.678-5');
+    await u.click(within(screen.getByLabelText('Paciente *').closest('form')!).getByRole('button', { name: 'Buscar' }));
     expect(await screen.findByText('María González Pérez')).toBeInTheDocument();
     expect(screen.getByText('Habilitada')).toBeInTheDocument();
-    await u.selectOptions(await screen.findByLabelText('Profesión'), 'Medicina');
+    await u.selectOptions(await screen.findByLabelText('Profesión *'), 'Medicina');
     await u.click(screen.getByRole('button', { name: /Buscar cupos/ }));
     expect(await screen.findByText('MAÑANA')).toBeInTheDocument();
     expect(screen.getByText('TARDE')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('Reservar cita: recorrido A (CU-04)', () => {
     servidor.use(http.get('/api/cupos/disponibles', () => HttpResponse.json([cupo(100, '09:40'), cupo(101, '10:40')])));
     const u = userEvent.setup();
     renderizar('/reservar-cita?paciente=1');
-    await u.selectOptions(await screen.findByLabelText('Profesión'), 'Medicina');
+    await u.selectOptions(await screen.findByLabelText('Profesión *'), 'Medicina');
     await u.click(screen.getByRole('button', { name: /Buscar cupos/ }));
     await u.click(await screen.findByRole('button', { name: /Primera hora disponible/ }));
     expect(screen.getByText('09:40 (20 minutos)')).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('Reservar cita: recorrido A (CU-04)', () => {
     );
     const u = userEvent.setup();
     renderizar('/reservar-cita?paciente=1');
-    await u.selectOptions(await screen.findByLabelText('Profesión'), 'Medicina');
+    await u.selectOptions(await screen.findByLabelText('Profesión *'), 'Medicina');
     await u.click(screen.getByRole('button', { name: /Buscar cupos/ }));
     await u.click(await screen.findByRole('button', { name: /09:40/ }));
     await u.click(screen.getByRole('button', { name: /Confirmar reserva/ }));

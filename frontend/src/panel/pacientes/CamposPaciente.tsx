@@ -2,6 +2,7 @@ import type { FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form
 import { MessageCircle } from 'lucide-react';
 import { edad } from '../../compartido/formato';
 import { GENEROS, RELACIONES, type DatosFormulario } from './esquemaPaciente';
+import { Etiqueta, Obligatorio } from '../../compartido/componentes';
 
 interface Props {
   register: UseFormRegister<DatosFormulario>;
@@ -24,7 +25,7 @@ export function CamposPaciente({ register, errors, watch, documentoBloqueado, en
     const e = errors[nombre]?.message as string | undefined;
     return (
       <div className="campo">
-        <label htmlFor={'f-' + nombre}>{etiqueta}</label>
+        <label htmlFor={'f-' + nombre}><Etiqueta texto={etiqueta} /></label>
         <input id={'f-' + nombre} className="control" {...register(nombre)} aria-invalid={!!e} aria-describedby={e ? 'e-' + nombre : undefined} {...props} />
         <Error m={e} id={'e-' + nombre} />
       </div>
@@ -35,7 +36,7 @@ export function CamposPaciente({ register, errors, watch, documentoBloqueado, en
     const e = ea?.[nombre]?.message;
     return (
       <div className="campo">
-        <label htmlFor={'fa-' + nombre}>{etiqueta}</label>
+        <label htmlFor={'fa-' + nombre}><Etiqueta texto={etiqueta} /></label>
         <input id={'fa-' + nombre} className="control" {...register(`adulto.${nombre}` as const)} aria-invalid={!!e} aria-describedby={e ? 'ea-' + nombre : undefined} {...props} />
         <Error m={e} id={'ea-' + nombre} />
       </div>
@@ -48,7 +49,7 @@ export function CamposPaciente({ register, errors, watch, documentoBloqueado, en
         {!enLinea && (
           <div className="grilla-3">
             <div className="campo">
-              <label htmlFor="f-tipoDocumento">Tipo de documento *</label>
+              <label htmlFor="f-tipoDocumento">Tipo de documento <Obligatorio /></label>
               <select id="f-tipoDocumento" className="control" {...register('tipoDocumento')} disabled={documentoBloqueado}>
                 <option value="RUT">RUT</option><option value="PASAPORTE">Pasaporte</option><option value="OTRO">Otro documento</option>
               </select>
@@ -68,7 +69,7 @@ export function CamposPaciente({ register, errors, watch, documentoBloqueado, en
         {campo('direccion', 'Dirección *', { autoComplete: 'street-address' })}
         <div className="grilla-2">
           <div className="campo">
-            <label htmlFor="f-genero">Género *</label>
+            <label htmlFor="f-genero">Género <Obligatorio /></label>
             <select id="f-genero" className="control" {...register('genero')} aria-invalid={!!errors.genero}>
               <option value="">Elige una opción</option>
               {GENEROS.map((g) => <option key={g}>{g}</option>)}
@@ -100,7 +101,7 @@ export function CamposPaciente({ register, errors, watch, documentoBloqueado, en
               </div>
               {campoAdulto('numeroDocumento', 'Documento *')}
               <div className="campo">
-                <label htmlFor="fa-relacion">Relación con el paciente *</label>
+                <label htmlFor="fa-relacion">Relación con el paciente <Obligatorio /></label>
                 <select id="fa-relacion" className="control" {...register('adulto.relacion')} aria-invalid={!!ea?.relacion}>
                   <option value="">Elige una opción</option>
                   {RELACIONES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}

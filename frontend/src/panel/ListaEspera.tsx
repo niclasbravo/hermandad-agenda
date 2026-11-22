@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, consulta } from '../compartido/api';
-import { Cargando, MensajeError, Modal, Vacio } from '../compartido/componentes';
+import { Cargando, MensajeError, Modal, Obligatorio, Vacio } from '../compartido/componentes';
 import { fechaHoraCorta } from '../compartido/formato';
 import { useSesion } from '../compartido/sesion';
 import type { Inscripcion } from '../compartido/tipos';
@@ -30,7 +30,7 @@ export function ListaEspera() {
             {profesiones.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
         </div>
-        {lista.isLoading && <Cargando />}
+        {lista.isLoading && <Cargando forma="tabla" texto="Cargando la lista de espera…" />}
         <MensajeError error={lista.error} />
         {lista.data && (
           <div className="tarjeta tabla-contenedor">
@@ -77,13 +77,13 @@ function ModalAdelantar({ inscripcion, alCerrar }: { inscripcion: Inscripcion; a
     <Modal titulo={`Adelantar a ${inscripcion.paciente}`} alCerrar={alCerrar}
       descripcion={`Hoy está en el puesto ${inscripcion.posicion} para ${inscripcion.profesion}. Al adelantarla, queda registrado quién lo hizo y por qué.`}>
       <div className="campo">
-        <label htmlFor="posicion">Nuevo puesto</label>
+        <label htmlFor="posicion">Nuevo puesto <Obligatorio /></label>
         <select id="posicion" className="control" value={posicion} onChange={(e) => setPosicion(Number(e.target.value))}>
           {Array.from({ length: inscripcion.posicion - 1 }, (_, k) => k + 1).map((n) => <option key={n} value={n}>{n === 1 ? '1 (primera)' : n}</option>)}
         </select>
       </div>
       <div className="campo">
-        <label htmlFor="motivo-adelantar">Motivo *</label>
+        <label htmlFor="motivo-adelantar">Motivo <Obligatorio /></label>
         <textarea id="motivo-adelantar" className="control" value={motivo} onChange={(e) => setMotivo(e.target.value)}
           aria-invalid={!!error} aria-describedby={error ? 'motivo-adelantar-error' : undefined} />
         {error && <span id="motivo-adelantar-error" className="campo-error">{error}</span>}
@@ -119,7 +119,7 @@ function ModalQuitar({ inscripcion, alCerrar }: { inscripcion: Inscripcion; alCe
       </fieldset>
       {motivo === 'OTRO' && (
         <div className="campo">
-          <label htmlFor="detalle-retiro">Detalle *</label>
+          <label htmlFor="detalle-retiro">Detalle <Obligatorio /></label>
           <input id="detalle-retiro" className="control" value={detalle} onChange={(e) => setDetalle(e.target.value)} placeholder="Ej.: se llamó 3 veces sin respuesta" />
         </div>
       )}
