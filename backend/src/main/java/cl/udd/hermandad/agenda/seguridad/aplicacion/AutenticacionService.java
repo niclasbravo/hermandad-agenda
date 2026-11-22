@@ -34,8 +34,10 @@ public class AutenticacionService {
             throw new ErrorNegocio(ErrorNegocio.Tipo.NO_AUTENTICADO, "CREDENCIALES",
                     "El usuario o la contraseña no son correctos.");
         }
+        // El perfil sale de la cuenta (corrección P-00): ya no se elige al ingresar. Si un cliente antiguo lo envía,
+        // se sigue validando que coincida.
         PerfilUsuario perfil = u.getPerfil().tipo();
-        if (perfil != perfilSolicitado) {
+        if (perfilSolicitado != null && perfil != perfilSolicitado) {
             throw new ErrorNegocio(ErrorNegocio.Tipo.SIN_PERMISO, "PERFIL_NO_CORRESPONDE",
                     "Este usuario no tiene perfil de " + perfilSolicitado.nombre() + ".");
         }

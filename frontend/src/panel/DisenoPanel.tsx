@@ -43,7 +43,7 @@ export function DisenoPanel({ children }: { children: ReactNode }) {
           </div>
           <button className="boton boton--texto" style={{ marginTop: 8, paddingLeft: 0 }}
             onClick={async () => { await salir(); navegar('/ingreso'); }}>
-            <LogOut size={20} aria-hidden="true" /> Cambiar perfil
+            <LogOut size={20} aria-hidden="true" /> Cerrar sesión
           </button>
         </div>
       </nav>

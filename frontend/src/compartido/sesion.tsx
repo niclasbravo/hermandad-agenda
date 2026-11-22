@@ -1,12 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, siSePierdeLaSesion } from './api';
-import type { Perfil, Usuario } from './tipos';
+import type { Usuario } from './tipos';
 
 interface ContextoSesion {
   usuario: Usuario | null;
   cargando: boolean;
-  ingresar: (usuario: string, contrasena: string, perfil: Perfil) => Promise<Usuario>;
+  ingresar: (usuario: string, contrasena: string) => Promise<Usuario>;
   salir: () => Promise<void>;
 }
 
@@ -29,8 +29,9 @@ export function ProveedorSesion({ children, inicial }: { children: ReactNode; in
     });
   }, [qc]);
 
-  const ingresar = useCallback(async (u: string, c: string, perfil: Perfil) => {
-    const yo = await api.post<Usuario>('/api/auth/ingresar', { usuario: u, contrasena: c, perfil });
+  const ingresar = useCallback(async (u: string, c: string) => {
+    // El perfil lo decide el backend según la cuenta (corrección P-00).
+    const yo = await api.post<Usuario>('/api/auth/ingresar', { usuario: u, contrasena: c });
     qc.clear();
     setUsuario(yo);
     return yo;

@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,7 +28,7 @@ public class AuthController {
 
     public record IngresoRequest(@NotBlank(message = "Escribe tu usuario.") String usuario,
                                  @NotBlank(message = "Escribe tu contraseña.") String contrasena,
-                                 @NotNull(message = "Elige el perfil.") PerfilUsuario perfil) {
+                                 PerfilUsuario perfil) {
     }
 
     public record YoResponse(Integer idUsuario, String usuario, String nombre, PerfilUsuario perfil,
