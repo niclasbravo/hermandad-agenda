@@ -129,6 +129,10 @@ Hola, {{1}}. Su hora del {{2}} a las {{3}} fue anulada por el policlínico. Escr
 
 ## Para la demo
 
+- **Números permitidos:** con `WHATSAPP_NUMEROS_PERMITIDOS` (separados por coma) solo esos celulares reciben
+  WhatsApp real; los mensajes a los pacientes ficticios de los datos demo van al simulador y no se marcan como fallidos.
+  Vacío = todos reciben WhatsApp real (producción).
+
 - Con el número de prueba de Meta solo llegan mensajes a los celulares agregados en **WhatsApp → Configuración de la API → Para**
   (máximo 5). El paciente de la demo debe tener uno de esos números en su ficha.
 - Las respuestas con botones llegan al backend por el webhook `https://<dominio>/webhooks/whatsapp`, que necesita una URL

@@ -53,6 +53,8 @@ mensajeria:
     app-secret: ${WHATSAPP_APP_SECRET:}
     verify-token: ${WHATSAPP_VERIFY_TOKEN:}
     api-version: ${WHATSAPP_API_VERSION:v25.0}
+    # Demo: solo estos números reciben WhatsApp real; el resto va al simulador. Vacío = todos (producción).
+    numeros-permitidos: ${WHATSAPP_NUMEROS_PERMITIDOS:}
   simulador:
     demora-entrega-segundos: 3
 
