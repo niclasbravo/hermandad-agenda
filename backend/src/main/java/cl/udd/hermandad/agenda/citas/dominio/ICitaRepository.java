@@ -8,6 +8,8 @@ public interface ICitaRepository {
     /** Guarda y fuerza la escritura (para detectar uq_cita_cupo_activo dentro del servicio). */
     Cita guardar(Cita cita);
     Optional<Cita> buscar(Long id);
+    /** SELECT … FOR UPDATE de la cita: anular, reagendar y registrar asistencia no se pisan entre sí. */
+    Optional<Cita> buscarParaModificar(Long id);
     /** Citas del día en un policlínico (incluye anuladas para el historial del día). */
     List<Cita> buscarDelDia(Integer idPoliclinico, LocalDate fecha);
     List<Cita> buscarPorPaciente(Integer idPaciente);

@@ -182,7 +182,9 @@ function TablaDelDia({ filas, avisos, esHoy, ahora, esTens, ocupado, alAsistenci
                   <td>
                     {esTens && (
                       <button className="boton boton--compacto" disabled={atender.isPending} onClick={async () => {
-                        await atender.mutateAsync(a.id);
+                        // RF-26: el clic marca el aviso como atendido. Si eso falla, igual se abre la reserva:
+                        // el aviso sigue visible mientras el cupo esté libre.
+                        try { await atender.mutateAsync(a.id); } catch { /* sin efecto en la reserva */ }
                         navegar(`/reservar-cita?paciente=${a.idPaciente}&cupo=${a.idCupo}&inscripcion=${a.idInscripcion}`);
                       }}>Reservar para {a.primera.split(' ')[0]}</button>
                     )}

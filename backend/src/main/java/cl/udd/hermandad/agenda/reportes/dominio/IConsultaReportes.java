@@ -13,6 +13,8 @@ public interface IConsultaReportes {
     List<ReporteAsistencia.Conteo> asistenciaPorProfesion(FiltroReporte f);
     List<ReporteAsistencia.Conteo> asistenciaPorMes(FiltroReporte f);
     List<ReporteDemanda.Fila> demanda(FiltroReporte f);
+    /** Inscripciones EN_ESPERA hoy, cada una contada una vez (no depende del período). */
+    long enEsperaTotal(FiltroReporte f);
     List<PacienteAtendido> pacientesAtendidos(FiltroReporte f);
     List<ListadoInasistencia.Fila> inasistencias(FiltroReporte f);
     List<CategoriaEtaria> categorias();

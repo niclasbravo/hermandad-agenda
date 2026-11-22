@@ -172,6 +172,9 @@ public class CatalogoService {
         Set<Policlinico> set = new LinkedHashSet<>();
         if (ids != null) {
             for (Integer id : ids) {
+                if (id == null) {
+                    throw ErrorNegocio.validacion("idsPoliclinico", "Elige un policlínico válido.");
+                }
                 set.add(policlinicos.findById(id).orElseThrow(() -> ErrorNegocio.noEncontrado("No encontramos ese policlínico.")));
             }
         }

@@ -19,7 +19,7 @@ export function ModalAnular({ cita, alCerrar, alAnular }: { cita: Cita; alCerrar
   const avisar = useAviso();
   const m = useMutation({
     mutationFn: () => api.post(`/api/citas/${cita.id}/anular`, { origen: 'TENS', motivo }),
-    onSuccess: () => { invalidar(); alAnular?.(); alCerrar(); avisar('Cita anulada', { detalle: 'Se avisó al paciente por WhatsApp y el cupo quedó libre.', tipo: 'info' }); },
+    onSuccess: () => { invalidar(); alAnular?.(); alCerrar(); avisar('Cita anulada', { detalle: 'El cupo quedó libre. Este aviso no se envía por WhatsApp: si el paciente no lo sabe, avísale por teléfono.', tipo: 'info' }); },
   });
   return (
     <Modal titulo={`¿Anular la cita de ${cita.paciente}?`} alCerrar={alCerrar}
@@ -39,7 +39,7 @@ export function ModalAnular({ cita, alCerrar, alAnular }: { cita: Cita; alCerrar
 }
 
 const ESTADO_ENTREGA: Record<string, string> = {
-  PROGRAMADO: 'Programado', ENVIADO: 'Enviado', ENTREGADO: 'Entregado', LEIDO: 'Leído', FALLIDO: 'No enviado',
+  PROGRAMADO: 'Programado', ENVIADO: 'Enviado', ENTREGADO: 'Entregado', LEIDO: 'Leído', FALLIDO: 'No enviado', CANCELADO: 'Cancelado',
 };
 const TIPO_MENSAJE: Record<string, string> = {
   CONFIRMACION: 'Confirmación', RECORDATORIO: 'Recordatorio', REFUERZO: 'Refuerzo automático', ANULACION: 'Aviso de anulación',
@@ -75,7 +75,7 @@ export function ModalConfirmacion({ cita, alCerrar }: { cita: Cita; alCerrar: ()
               <MessageCircle size={18} aria-hidden="true" style={{ color: 'var(--color-tinta)', marginTop: 2, flexShrink: 0 }} />
               <span><strong>{m.fechaEnvio ? fechaHoraCorta(m.fechaEnvio) : ''}</strong>{' '}
                 <span className="texto-secundario">{m.enviadoPor === 'TENS' ? 'Reenviado por la TENS/TONS' : TIPO_MENSAJE[m.tipo]} por WhatsApp · {ESTADO_ENTREGA[m.estado]}
-                  {cita.estadoConfirmacion === 'SIN_RESPUESTA' && m.tipo !== 'CONFIRMACION' && m.estado !== 'FALLIDO' ? ', sin respuesta' : ''}</span></span>
+                  {cita.estadoConfirmacion === 'SIN_RESPUESTA' && m.tipo !== 'CONFIRMACION' && m.estado !== 'FALLIDO' && m.estado !== 'CANCELADO' ? ', sin respuesta' : ''}</span></span>
             </li>
           ))}
         </ul>

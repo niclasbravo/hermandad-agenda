@@ -10,10 +10,18 @@ import cl.udd.hermandad.agenda.reportes.aplicacion.ReporteService;
 import cl.udd.hermandad.agenda.reportes.dominio.FiltroReporte;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** M5 · lista de espera (RF-25, RF-26, RF-42, RF-43). */
 class ListaEsperaTest extends PruebaIntegracion {
@@ -21,6 +29,36 @@ class ListaEsperaTest extends PruebaIntegracion {
     @Autowired ListaEsperaService lista;
     @Autowired AgendamientoService agendamiento;
     @Autowired ReporteService reportes;
+    @Autowired MockMvc mvc;
+
+    /** Los endpoints devuelven los movimientos: deben cargarse dentro de la transacción (open-in-view desactivado). */
+    @Test
+    void listarAdelantarYRetirarPorHttpRespondenConLosMovimientos() throws Exception {
+        var b = esc.base();
+        int p1 = esc.paciente(b, true);
+        int p2 = esc.paciente(b, true);
+        esc.como(b.tens());
+        lista.inscribir(p1, b.idPoliclinico(), b.idProfesion());
+        reloj.fijarEn(reloj.ahora().plusMinutes(5));
+        var i2 = lista.inscribir(p2, b.idPoliclinico(), b.idProfesion());
+        var tens = authentication(Escenario.autenticacion(b.tens()));
+
+        mvc.perform(get("/api/lista-espera").param("profesion", String.valueOf(b.idProfesion())).with(tens))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].movimientos[0].tipo").value("INSCRIPCION"));
+        mvc.perform(post("/api/lista-espera/" + i2.getId() + "/adelantar").with(csrf()).with(tens)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"motivo\":\"Urgencia\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.adelantada").value(true));
+        mvc.perform(post("/api/lista-espera/" + i2.getId() + "/retirar").with(csrf()).with(tens)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"motivo\":\"DESISTE\"}"))
+                .andExpect(status().isOk());
+        assertThat(texto("select estado from inscripcion_espera where id_inscripcion = ?", i2.getId())).isEqualTo("RETIRADA");
+        // Un segundo intento (doble clic) avisa que ya no está, sin error interno.
+        mvc.perform(post("/api/lista-espera/" + i2.getId() + "/retirar").with(csrf()).with(tens)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"motivo\":\"DESISTE\"}"))
+                .andExpect(jsonPath("$.codigo").value("INSCRIPCION_RETIRADA"));
+    }
 
     @Test
     void caRf25_1_apareceConSuFechaPorOrdenDeLlegadaYConMovimientoInscripcion() {

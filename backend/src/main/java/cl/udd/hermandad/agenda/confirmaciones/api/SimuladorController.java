@@ -46,7 +46,8 @@ public class SimuladorController {
     @Transactional(readOnly = true)
     public List<BurbujaDto> mensajes(@RequestParam String telefono) {
         List<Mensaje> lista = servicio.enviadosA(telefono);
-        return lista.reversed().stream().map(m -> new BurbujaDto(m.getId(), m.getCita().getId(),
+        // Un mensaje cancelado nunca llegó al teléfono: no se muestra en el simulador.
+        return lista.reversed().stream().filter(m -> !m.isCancelado()).map(m -> new BurbujaDto(m.getId(), m.getCita().getId(),
                 m.getPlantilla().getTipo().name(), RedactorMensajes.texto(m.getPlantilla(), m.getCita(), m.getDestinatario()),
                 m.getPlantilla().llevaBotones(), m.getEstadoEntrega().name(), m.getFechaEnvio(), m.getCita().estaVigente()))
                 .toList();

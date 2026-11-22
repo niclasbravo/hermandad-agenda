@@ -12,13 +12,16 @@ import cl.udd.hermandad.agenda.reportes.dominio.ReporteCaracterizacion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -61,6 +64,16 @@ class AsistenciaYReportesTest extends PruebaIntegracion {
 
     private FiltroReporte filtro(Datos d) {
         return new FiltroReporte(esc.dia(), esc.dia(), d.b().idPoliclinico(), null);
+    }
+
+    @Test
+    void asistenciaSinIndicarSiAsistioSeRechazaYNoCambiaLaCita() throws Exception {
+        var d = datos();
+        mvc.perform(post("/api/citas/" + d.citaA() + "/asistencia").with(csrf())
+                        .with(authentication(Escenario.autenticacion(d.b().tens())))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        assertThat(texto("select estado from cita where id_cita = ?", d.citaA())).isEqualTo("RESERVADA");
     }
 
     @Test
@@ -136,6 +149,27 @@ class AsistenciaYReportesTest extends PruebaIntegracion {
         assertThat(fila.reservas()).isEqualTo(3);
         assertThat(fila.enEspera()).isEqualTo(1);
         assertThat(fila.demanda()).isEqualTo(4);
+    }
+
+    /** Con dos profesionales de la misma profesión, la persona en espera aparece en ambas filas pero cuenta una vez. */
+    @Test
+    void laListaDeEsperaSeCuentaUnaSolaVezEnElTotalDeDemanda() {
+        var d = datos();
+        int otro = esc.profesional(d.b().idProfesion(), d.b().idPoliclinico(), "Andrés", "Vidal");
+        esc.como(d.b().admin());
+        var r = reportes.demanda(filtro(d));
+        assertThat(r.filas().stream().filter(f -> f.idProfesional() == otro).findFirst().orElseThrow().enEspera()).isEqualTo(1);
+        assertThat(r.enEspera()).isEqualTo(1);
+        assertThat(r.demanda()).isEqualTo(4);
+    }
+
+    @Test
+    void unPeriodoSinReservasNoTieneDatosAunqueHayaPersonasEsperando() {
+        var d = datos();
+        esc.como(d.b().admin());
+        var r = reportes.demanda(new FiltroReporte(esc.dia().plusMonths(6), esc.dia().plusMonths(6), d.b().idPoliclinico(), null));
+        assertThat(r.enEspera()).isEqualTo(1);
+        assertThat(r.sinDatos()).isTrue();
     }
 
     @Test

@@ -104,7 +104,7 @@ public class AgendamientoService {
         boolean disponible = cupo.getBloque().isActivo() && (estado == EstadoCupo.DISPONIBLE
                 || (serie != null && estado == EstadoCupo.NO_PUBLICADO && cupo.inicio().isAfter(ahora)));
         if (!disponible) {
-            throw ErrorNegocio.conflicto("CUPO_TOMADO", TraductorErroresBaseDatos.MSJ_CUPO_TOMADO);
+            throw noDisponible(cupo, estado);
         }
         if (canal == CanalReserva.EN_LINEA) {
             if (!cupo.isHabilitadoWeb()) {
@@ -207,7 +207,7 @@ public class AgendamientoService {
     }
 
     private Cita anularComo(Long idCita, OrigenAnulacion origen, String motivo, Integer idUsuario, boolean avisarPaciente) {
-        Cita cita = cita(idCita);
+        Cita cita = paraModificar(idCita);
         exigirPoliclinicoPermitido(cita);
         cita.anular(origen, motivo, idUsuario, reloj.ahora());
         citas.guardar(cita);
@@ -229,7 +229,7 @@ public class AgendamientoService {
 
     public Cita reagendar(Long idCita, Long idCupoNuevo) {
         UsuarioSesion u = SesionActual.usuario();
-        Cita original = cita(idCita);
+        Cita original = paraModificar(idCita);
         if (!original.estaVigente()) {
             throw ErrorNegocio.regla("CITA_NO_VIGENTE", "Esta cita ya no está vigente.");
         }
@@ -249,8 +249,9 @@ public class AgendamientoService {
         if (canal == CanalReserva.EN_LINEA) {
             LocalDateTime ahora = reloj.ahora();
             Cupo cupo = cupos.obtenerParaReserva(idCupo).orElseThrow();
-            if (!cupo.estaDisponible(ahora, cupos.tieneCitaVigente(idCupo))) {
-                throw ErrorNegocio.conflicto("CUPO_TOMADO", TraductorErroresBaseDatos.MSJ_CUPO_TOMADO);
+            boolean reservado = cupos.tieneCitaVigente(idCupo);
+            if (!cupo.getBloque().isActivo() || !cupo.estaDisponible(ahora, reservado)) {
+                throw noDisponible(cupo, cupo.estado(ahora, reservado));
             }
             Paciente p = pacientes.obtener(idPaciente);
             Cita cita = citas.guardar(Cita.nueva(p, cupo, canal, null, p.estaHabilitado(), null, ahora));
@@ -263,9 +264,13 @@ public class AgendamientoService {
     }
 
     /** D-10: resuelve las reservas afectadas por un cambio de bloque (Administración). */
-    public List<Cita> resolverAfectadas(List<AccionAfectada> acciones) {
+    public List<Cita> resolverAfectadas(Integer idBloque, List<AccionAfectada> acciones) {
         List<Cita> resultado = new ArrayList<>();
         for (AccionAfectada a : acciones) {
+            Cita afectada = paraModificar(a.idCita());
+            if (!afectada.getCupo().getBloque().getId().equals(idBloque)) {
+                throw ErrorNegocio.validacion("acciones", "Una de las citas no pertenece a este bloque horario.");
+            }
             if (a.accion() == AccionAfectada.Tipo.REASIGNAR) {
                 if (a.idCupoNuevo() == null) {
                     throw ErrorNegocio.validacion("idCupoNuevo", "Elige el nuevo horario para reasignar.");
@@ -283,6 +288,23 @@ public class AgendamientoService {
     }
 
     // ---------------- Consultas ----------------
+
+    /** 409 con la causa real: solo «otra persona lo tomó» cuando de verdad tiene una reserva. */
+    private static ErrorNegocio noDisponible(Cupo cupo, EstadoCupo estado) {
+        if (estado == EstadoCupo.RESERVADO) {
+            return ErrorNegocio.conflicto("CUPO_TOMADO", TraductorErroresBaseDatos.MSJ_CUPO_TOMADO);
+        }
+        String mensaje = !cupo.getBloque().isActivo() || estado == EstadoCupo.BLOQUEADO
+                ? "Este horario está bloqueado y no se puede reservar. Elige otro."
+                : estado == EstadoCupo.PASADO ? "Este horario ya pasó. Elige otro."
+                : "Este horario todavía no está publicado. Elige otro.";
+        return ErrorNegocio.conflicto("CUPO_NO_DISPONIBLE", mensaje);
+    }
+
+    /** Con bloqueo de fila: dos operaciones simultáneas sobre la misma cita se atienden una después de la otra. */
+    private Cita paraModificar(Long idCita) {
+        return citas.buscarParaModificar(idCita).orElseThrow(() -> ErrorNegocio.noEncontrado("No encontramos esa cita."));
+    }
 
     @Transactional(readOnly = true)
     public Cita cita(Long idCita) {

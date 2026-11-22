@@ -65,9 +65,13 @@ public class AgendaService {
         return new Previsualizacion(horas.size(), duracion, horas, dias, horas.size() * dias, profesion, mensaje);
     }
 
+    /**
+     * La vigencia se guarda desde hoy como mínimo: los cupos solo se generan desde hoy, y así un bloque nuevo no choca
+     * con bloques que se cerraron en el pasado al modificarlos (D-10).
+     */
     public BloqueHorario crearBloque(DatosBloque d) {
         Integer idUsuario = SesionActual.usuario().idUsuario();
-        BloqueHorario b = construir(d, idUsuario);
+        BloqueHorario b = construir(desdeHoy(d), idUsuario);
         Integer duracion = b.getProfesional().duracionAtencion();
         b.horasDelDia(duracion);
         verificarSuperposicion(b);
@@ -109,6 +113,7 @@ public class AgendaService {
             verificarSuperposicion(actual);
             bloques.guardar(actual);
             marcarSobrantes(sobrantes, idUsuario);
+            desbloquearVigentes(futuros, d.vigenciaDesde(), d.vigenciaHasta());
             Integer duracion = actual.getProfesional().duracionAtencion();
             if (duracion != null) {
                 Set<String> existentes = cupos.delBloque(idBloque, null, null).stream()
@@ -146,6 +151,9 @@ public class AgendaService {
     public BloqueHorario desactivarBloque(Integer idBloque) {
         Integer idUsuario = SesionActual.usuario().idUsuario();
         BloqueHorario actual = bloque(idBloque);
+        if (!actual.isActivo()) {
+            throw ErrorNegocio.regla("BLOQUE_INACTIVO", "Este bloque ya está desactivado.");
+        }
         List<Cupo> sobrantes = cupos.delBloque(idBloque, reloj.hoy(), null);
         exigirSinAfectadas(sobrantes);
         actual.desactivar();
@@ -162,7 +170,10 @@ public class AgendaService {
 
     @Transactional(readOnly = true)
     public List<BloqueHorario> bloquesDelProfesional(Integer idProfesional) {
-        return bloques.activosDelProfesional(idProfesional);
+        LocalDate hoy = reloj.hoy();
+        // Un bloque cerrado al modificarlo (vigencia hasta ayer) es historial: no se muestra para modificar ni desactivar.
+        return bloques.activosDelProfesional(idProfesional).stream()
+                .filter(b -> !b.getVigenciaHasta().isBefore(hoy)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -183,7 +194,8 @@ public class AgendaService {
             if (idProfesional == null || fecha == null || desde == null || hasta == null || !hasta.isAfter(desde)) {
                 throw ErrorNegocio.validacion("hasta", "Indica el profesional, la fecha y un rango de horas válido.");
             }
-            objetivo = cupos.deLaSemana(idProfesional, null, null, fecha, fecha).stream()
+            objetivo = cupos.deLaSemana(idProfesional, null, null, fecha, fecha, reloj.hoy()).stream()
+                    .filter(c -> c.getBloque().isActivo())
                     .filter(c -> c.getHoraInicio().isBefore(hasta) && desde.isBefore(c.getHoraTermino())).toList();
         }
         if (objetivo.isEmpty()) {
@@ -209,13 +221,13 @@ public class AgendaService {
     @Transactional(readOnly = true)
     public List<CupoVista> agendaSemanal(Integer idProfesional, Integer idPoliclinico, LocalDate desde) {
         LocalDate lunes = lunesDe(desde == null ? reloj.hoy() : desde);
-        return vistas(cupos.deLaSemana(idProfesional, idPoliclinico, null, lunes, lunes.plusDays(6)));
+        return vistas(cupos.deLaSemana(idProfesional, idPoliclinico, null, lunes, lunes.plusDays(6), reloj.hoy()));
     }
 
     @Transactional(readOnly = true)
     public List<CupoVista> agendaPorBox(Integer idBox, LocalDate desde) {
         LocalDate lunes = lunesDe(desde == null ? reloj.hoy() : desde);
-        return vistas(cupos.deLaSemana(null, null, idBox, lunes, lunes.plusDays(6)));
+        return vistas(cupos.deLaSemana(null, null, idBox, lunes, lunes.plusDays(6), reloj.hoy()));
     }
 
     @Transactional(readOnly = true)
@@ -293,10 +305,45 @@ public class AgendaService {
     }
 
     private void verificarSuperposicion(BloqueHorario b) {
-        if (!bloques.buscarSuperpuestos(b).isEmpty()) {
+        List<BloqueHorario> otros = bloques.buscarSuperpuestos(b);
+        if (!otros.isEmpty()) {
+            BloqueHorario o = otros.get(0);
+            String mismo = o.getProfesional().getId().equals(b.getProfesional().getId()) ? "del mismo profesional" : "del mismo box";
             throw ErrorNegocio.conflicto("BLOQUE_SUPERPUESTO",
-                    "Este horario se cruza con otro bloque del mismo profesional o del mismo box. Elige otro horario o box.");
+                    "Este horario se cruza con un bloque " + mismo + ": " + o.getProfesional().nombreCompleto() + ", "
+                            + o.getBox().getPoliclinico().getNombre() + " " + o.getBox().getNombre() + ", "
+                            + DIAS[o.getDiaSemana() - 1] + " de " + Textos.hora2(o.getHoraInicio()) + " a "
+                            + Textos.hora2(o.getHoraTermino()) + ", vigente del " + Textos.fechaCorta(o.getVigenciaDesde())
+                            + " al " + Textos.fechaCorta(o.getVigenciaHasta()) + ". Elige otro horario o box.",
+                    Map.of("idBloque", o.getId()));
         }
+    }
+
+    private static final String[] DIAS = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
+
+    private DatosBloque desdeHoy(DatosBloque d) {
+        LocalDate hoy = reloj.hoy();
+        if (d.vigenciaHasta() != null && d.vigenciaHasta().isBefore(hoy)) {
+            throw ErrorNegocio.validacion("vigenciaHasta", "La vigencia debe terminar hoy o después.");
+        }
+        LocalDate desde = d.vigenciaDesde() == null ? null : maximo(hoy, d.vigenciaDesde());
+        return new DatosBloque(d.idProfesional(), d.idBox(), d.diaSemana(), d.horaInicio(), d.horaTermino(), desde,
+                d.vigenciaHasta());
+    }
+
+    /** Vuelve a ofrecer los cupos que un recorte de vigencia había bloqueado y que quedan otra vez dentro de ella. */
+    private void desbloquearVigentes(List<Cupo> futuros, LocalDate desde, LocalDate hasta) {
+        List<Cupo> candidatos = futuros.stream()
+                .filter(c -> c.getBloqueo() != null && Bloqueo.MOTIVO_BLOQUE_MODIFICADO.equals(c.getBloqueo().getMotivo()))
+                .filter(c -> !c.getFecha().isBefore(desde) && !c.getFecha().isAfter(hasta))
+                .toList();
+        if (candidatos.isEmpty()) {
+            return;
+        }
+        Set<Long> conCita = cupos.conCitaVigente(candidatos.stream().map(Cupo::getId).toList());
+        List<Cupo> libres = candidatos.stream().filter(c -> !conCita.contains(c.getId())).toList();
+        libres.forEach(Cupo::desbloquear);
+        cupos.guardarTodos(libres);
     }
 
     private void exigirSinAfectadas(List<Cupo> sobrantes) {

@@ -104,7 +104,7 @@ public class CitaController {
     @PostMapping("/bloques/{id}/resolver-afectadas")
     @PreAuthorize("hasRole('ADMINISTRACION')")
     public List<CitaDto> resolverAfectadas(@PathVariable Integer id, @Valid @RequestBody ResolverRequest r) {
-        return servicio.resolverAfectadas(r.acciones()).stream().map(c -> CitaDto.de(c, reloj.hoy())).toList();
+        return servicio.resolverAfectadas(id, r.acciones()).stream().map(c -> CitaDto.de(c, reloj.hoy())).toList();
     }
 
     @GetMapping("/pacientes/{id}/historial")

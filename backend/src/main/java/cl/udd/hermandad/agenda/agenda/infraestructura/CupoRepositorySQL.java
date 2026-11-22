@@ -143,13 +143,18 @@ public class CupoRepositorySQL implements ICupoRepository {
     }
 
     @Override
-    public List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta) {
-        StringBuilder jpql = new StringBuilder(FETCH + "where b.activo = true and c.fecha between :desde and :hasta");
+    public List<Cupo> deLaSemana(Integer idProfesional, Integer idPoliclinico, Integer idBox, LocalDate desde, LocalDate hasta,
+                                LocalDate hoy) {
+        // Fechas pasadas: se muestran siempre (historial, aunque el bloque ya no esté activo). Desde hoy: solo los cupos
+        // de bloques activos y dentro de su vigencia (los de un bloque cerrado al modificarlo no se duplican, D-10).
+        StringBuilder jpql = new StringBuilder(FETCH + "where c.fecha between :desde and :hasta "
+                + "and (c.fecha < :hoy or (b.activo = true and c.fecha between b.vigenciaDesde and b.vigenciaHasta))");
         if (idProfesional != null) jpql.append(" and p.id = :pro");
         if (idPoliclinico != null) jpql.append(" and x.policlinico.id = :pol");
         if (idBox != null) jpql.append(" and x.id = :box");
         jpql.append(" order by c.fecha, c.horaInicio");
-        var q = em.createQuery(jpql.toString(), Cupo.class).setParameter("desde", desde).setParameter("hasta", hasta);
+        var q = em.createQuery(jpql.toString(), Cupo.class).setParameter("desde", desde).setParameter("hasta", hasta)
+                .setParameter("hoy", hoy);
         if (idProfesional != null) q.setParameter("pro", idProfesional);
         if (idPoliclinico != null) q.setParameter("pol", idPoliclinico);
         if (idBox != null) q.setParameter("box", idBox);
@@ -158,9 +163,12 @@ public class CupoRepositorySQL implements ICupoRepository {
 
     @Override
     public Optional<Cupo> buscarPorProfesionalFechaHora(Integer idProfesional, LocalDate fecha, LocalTime hora) {
-        return em.createQuery(FETCH + "where b.activo = true and p.id = :pro and c.fecha = :fecha and c.horaInicio = :hora", Cupo.class)
+        // Puede haber dos cupos a la misma hora si el bloque se modificó: se prefiere el que está vigente y sin bloquear.
+        return em.createQuery(FETCH + "where b.activo = true and p.id = :pro and c.fecha = :fecha and c.horaInicio = :hora "
+                        + "and c.fecha between b.vigenciaDesde and b.vigenciaHasta "
+                        + "order by case when c.bloqueo is null then 0 else 1 end, c.id desc", Cupo.class)
                 .setParameter("pro", idProfesional).setParameter("fecha", fecha).setParameter("hora", hora)
-                .getResultStream().findFirst();
+                .setMaxResults(1).getResultStream().findFirst();
     }
 
     @Override

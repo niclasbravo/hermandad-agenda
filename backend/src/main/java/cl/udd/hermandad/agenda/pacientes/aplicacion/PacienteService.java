@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -143,7 +144,7 @@ public class PacienteService {
         if (d.nombreCompleto() == null || d.nombreCompleto().isBlank()) {
             throw ErrorNegocio.validacion("adulto.nombreCompleto", "Escribe el nombre del adulto responsable.");
         }
-        DocumentoIdentidad doc = DocumentoIdentidad.de(d.tipoDocumento(), d.numeroDocumento());
+        DocumentoIdentidad doc = documentoDelAdulto(d);
         Optional<AdultoResponsable> existente = pacientes.buscarAdulto(doc.getTipo(), doc.getNumero());
         if (existente.isPresent()) {
             AdultoResponsable a = existente.get();
@@ -154,6 +155,20 @@ public class PacienteService {
             return a;
         }
         return pacientes.guardarAdulto(new AdultoResponsable(doc, d.nombreCompleto(), d.telefono()));
+    }
+
+    /** El error se marca en el documento del adulto (adulto.numeroDocumento), no en el del paciente. */
+    private static DocumentoIdentidad documentoDelAdulto(DatosPaciente.DatosAdulto d) {
+        try {
+            return DocumentoIdentidad.de(d.tipoDocumento(), d.numeroDocumento());
+        } catch (ErrorNegocio e) {
+            if (e.getTipo() != ErrorNegocio.Tipo.VALIDACION || !(e.getDetalles().get("campos") instanceof Map<?, ?> campos)) {
+                throw e;
+            }
+            Map<String, Object> prefijados = new LinkedHashMap<>();
+            campos.forEach((k, v) -> prefijados.put("adulto." + k, v));
+            throw new ErrorNegocio(e.getTipo(), e.getCodigo(), e.getMessage(), Map.of("campos", prefijados));
+        }
     }
 
     private Paciente inicializar(Paciente p) {

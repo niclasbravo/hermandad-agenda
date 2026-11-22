@@ -54,7 +54,7 @@ public class ReporteService {
     }
 
     public ReporteDemanda demanda(FiltroReporte f) {
-        return new ReporteDemanda(f, consultas.demanda(f));
+        return new ReporteDemanda(f, consultas.demanda(f), consultas.enEsperaTotal(f));
     }
 
     public ReporteCaracterizacion caracterizacion(FiltroReporte f) {

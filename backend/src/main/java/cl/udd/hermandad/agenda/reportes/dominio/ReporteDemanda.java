@@ -11,16 +11,25 @@ public class ReporteDemanda extends Reporte {
     }
 
     private final List<Fila> filas;
+    private final long enEsperaTotal;
 
-    public ReporteDemanda(FiltroReporte filtro, List<Fila> filas) {
+    /**
+     * La lista de espera es por policlínico y profesión: cada fila muestra la de su profesión (compartida entre los
+     * profesionales de esa profesión), pero el total la cuenta una sola vez.
+     */
+    public ReporteDemanda(FiltroReporte filtro, List<Fila> filas, long enEsperaTotal) {
         super(filtro);
         this.filas = filas;
+        this.enEsperaTotal = enEsperaTotal;
     }
 
     public List<Fila> filas() { return filas; }
     public long reservas() { return filas.stream().mapToLong(Fila::reservas).sum(); }
-    public long enEspera() { return filas.stream().mapToLong(Fila::enEspera).sum(); }
+    public long enEspera() { return enEsperaTotal; }
+
+    public long demanda() { return reservas() + enEsperaTotal; }
 
     @Override
-    public boolean sinDatos() { return filas.stream().allMatch(f -> f.demanda() == 0); }
+    /** La lista de espera es la de hoy: un período sin reservas no tiene datos aunque haya personas esperando. */
+    public boolean sinDatos() { return reservas() == 0; }
 }

@@ -23,6 +23,7 @@ import cl.udd.hermandad.agenda.seguridad.aplicacion.AuditoriaService;
 import cl.udd.hermandad.agenda.seguridad.dominio.IUsuarioRepository;
 import cl.udd.hermandad.agenda.seguridad.dominio.RegistroAuditoria;
 import cl.udd.hermandad.agenda.seguridad.dominio.Usuario;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -64,7 +65,7 @@ public class AsistenciaController {
         static MensajeDto de(Mensaje m) {
             return new MensajeDto(m.getId(), m.getPlantilla().getTipo().name(), m.getPlantilla().getNombreProveedor(),
                     m.getDestinatario().name(), cl.udd.hermandad.agenda.pacientes.dominio.Telefono.formatear(m.getTelefonoDestino()),
-                    m.getEstadoEntrega().name(), m.getEnviadoPor().name(), m.getFechaProgramada(), m.getFechaEnvio(),
+                    m.estadoVisible(), m.getEnviadoPor().name(), m.getFechaProgramada(), m.getFechaEnvio(),
                     RedactorMensajes.texto(m.getPlantilla(), m.getCita(), m.getDestinatario()));
         }
     }
@@ -118,8 +119,8 @@ public class AsistenciaController {
 
     @PostMapping("/citas/{id}/asistencia")
     @PreAuthorize("hasRole('TENS')")
-    public FilaCita asistencia(@PathVariable Long id, @RequestBody AsistenciaRequest r) {
-        return fila(servicio.registrarAsistencia(id, Boolean.TRUE.equals(r.asistio())));
+    public FilaCita asistencia(@PathVariable Long id, @Valid @RequestBody AsistenciaRequest r) {
+        return fila(servicio.registrarAsistencia(id, r.asistio()));
     }
 
     @GetMapping("/citas/{id}")
@@ -141,10 +142,13 @@ public class AsistenciaController {
                     case ANULACION -> "Aviso de anulación";
                 };
                 String a = m.getDestinatario() == Paciente.Destinatario.PACIENTE ? "al paciente" : "al adulto responsable";
-                boolean cancelado = m.getEstadoEntrega() == EstadoEntrega.FALLIDO && c.getFechaAnulacion() != null
+                // Los cancelados antes de la marca CANCELADO (datos antiguos) se reconocen por la fecha de anulación.
+                boolean anteriorALaMarca = m.getEstadoEntrega() == EstadoEntrega.FALLIDO && c.getFechaAnulacion() != null
                         && m.getIdExterno() == null && !m.getFechaEnvio().isBefore(c.getFechaAnulacion());
-                eventos.add(new EventoDto(m.getFechaEnvio(), que + " por WhatsApp " + a + ": "
-                        + (cancelado ? "cancelado (cita anulada)" : estadoEntrega(m.getEstadoEntrega()))));
+                String estado = m.isCancelado() || anteriorALaMarca
+                        ? (c.getFechaAnulacion() != null ? "cancelado (cita anulada)" : "cancelado (se reemplazó por uno nuevo)")
+                        : estadoEntrega(m.getEstadoEntrega());
+                eventos.add(new EventoDto(m.getFechaEnvio(), que + " por WhatsApp " + a + ": " + estado));
             }
         }
         d.respuestas().forEach(r -> eventos.add(new EventoDto(r.getFechaHora(), "Respuesta del paciente: "

@@ -23,7 +23,7 @@ const TOOLTIP = {
 };
 
 export function Indicador({ titulo, valor, pie, comparacion, serie }: {
-  titulo: string; valor: string; pie?: string; comparacion?: { delta: number; mejorSiBaja?: boolean }; serie?: number[];
+  titulo: string; valor: string; pie?: string; comparacion?: { delta: number; mejorSiBaja?: boolean }; serie?: (number | null)[];
 }) {
   const c = comparacion;
   const bueno = c ? (c.mejorSiBaja ? c.delta <= 0 : c.delta >= 0) : true;
@@ -36,7 +36,7 @@ export function Indicador({ titulo, valor, pie, comparacion, serie }: {
         </span>
         {c && <span className={'chip ' + (bueno ? 'chip--exito' : 'chip--error')}>{c.delta >= 0 ? '▲' : '▼'} {Math.abs(c.delta).toLocaleString('es-CL', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} pts vs período anterior</span>}
       </div>
-      {serie && serie.length > 1 && <MiniTendencia serie={serie} />}
+      {serie && serie.filter((v) => v != null).length > 1 && <MiniTendencia serie={serie} />}
       {pie && <div className="texto-secundario texto-pequeno">{pie}</div>}
     </div>
   );
@@ -70,14 +70,14 @@ function NumeroAnimado({ texto }: { texto: string }) {
 }
 
 /** Mini tendencia sin ejes dentro de un indicador (decorativa: el número grande es el dato; el detalle está en «Evolución»). */
-function MiniTendencia({ serie }: { serie: number[] }) {
+function MiniTendencia({ serie }: { serie: (number | null)[] }) {
   const datos = serie.map((v, i) => ({ i, v }));
   return (
     <div className="mini-tendencia" aria-hidden="true">
       <ResponsiveContainer>
         <LineChart data={datos} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
-          <Line type="monotone" dataKey="v" stroke={VERDE_AZULADO} strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="v" stroke={VERDE_AZULADO} strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -87,11 +87,14 @@ function MiniTendencia({ serie }: { serie: number[] }) {
 interface Parte { nombre: string; valor: number; color: string }
 
 /** Anillo parte-del-todo (2 a 4 partes) con el dato principal al centro y leyenda con valores (nunca solo color). */
-function Anillo({ titulo, partes, centro, subtitulo }: { titulo: string; partes: Parte[]; centro: string; subtitulo: string }) {
+function Anillo({ titulo, partes, centro, subtitulo, ancho = false }: {
+  titulo: string; partes: Parte[]; centro: string; subtitulo: string; ancho?: boolean;
+}) {
   const total = partes.reduce((a, p) => a + p.valor, 0);
   return (
-    <section className="tarjeta tarjeta--padding pila">
+    <section className={'tarjeta tarjeta--padding pila' + (ancho ? ' anillo-tarjeta--ancha' : '')}>
       <h2>{titulo}</h2>
+      <div className="anillo-cuerpo">
       <div className="anillo">
         <ResponsiveContainer>
           <PieChart>
@@ -116,6 +119,7 @@ function Anillo({ titulo, partes, centro, subtitulo }: { titulo: string; partes:
           </li>
         ))}
       </ul>
+      </div>
     </section>
   );
 }
@@ -144,30 +148,44 @@ function BarrasHorizontales<T extends object>({ datos, clave, etiqueta, ancho, f
 
 interface FilaOcupacion { policlinico: string; profesional: string; profesion: string; ofrecidos: number; reservados: number; disponibles: number; porcentajeOcupacion: number }
 
-export function Ocupacion({ d }: { d: { ofrecidos: number; reservados: number; disponibles: number; porcentajeOcupacion: number; anterior: { porcentajeOcupacion: number }; filas: FilaOcupacion[] } }) {
-  const porPol = Object.values(d.filas.reduce<Record<string, { nombre: string; ofrecidos: number; reservados: number }>>((acc, f) => {
-    acc[f.policlinico] ??= { nombre: f.policlinico, ofrecidos: 0, reservados: 0 };
-    acc[f.policlinico].ofrecidos += f.ofrecidos;
-    acc[f.policlinico].reservados += f.reservados;
+/** Agrupa las filas de ocupación por policlínico o por profesional, con su porcentaje. */
+function ocupacionPor(filas: FilaOcupacion[], clave: 'policlinico' | 'profesional') {
+  return Object.values(filas.reduce<Record<string, { nombre: string; ofrecidos: number; reservados: number }>>((acc, f) => {
+    acc[f[clave]] ??= { nombre: f[clave], ofrecidos: 0, reservados: 0 };
+    acc[f[clave]].ofrecidos += f.ofrecidos;
+    acc[f[clave]].reservados += f.reservados;
     return acc;
   }, {})).map((x) => ({ ...x, pct: x.ofrecidos ? Math.round((x.reservados * 1000) / x.ofrecidos) / 10 : 0 })).sort((a, b) => b.pct - a.pct);
+}
+
+export function Ocupacion({ d }: { d: { ofrecidos: number; reservados: number; disponibles: number; porcentajeOcupacion: number; anterior: { ofrecidos: number; porcentajeOcupacion: number }; filas: FilaOcupacion[] } }) {
+  // Con un solo policlínico (por filtro) se desglosa por profesional; si también es uno solo, las barras repetirían el anillo.
+  const porPol = ocupacionPor(d.filas, 'policlinico');
+  const porProf = ocupacionPor(d.filas, 'profesional');
+  const desglose = porPol.length > 1 ? { titulo: 'Ocupación por policlínico', datos: porPol, ancho: 170 }
+    : porProf.length > 1 ? { titulo: 'Ocupación por profesional', datos: porProf, ancho: 190 } : null;
+  const anillo = (
+    <Anillo titulo="Cupos del período" centro={porcentaje(d.porcentajeOcupacion)} subtitulo="ocupación" ancho={!desglose}
+      partes={[{ nombre: 'Reservados', valor: d.reservados, color: VERDE_AZULADO }, { nombre: 'Disponibles', valor: d.disponibles, color: NEUTRO }]} />
+  );
   return (
     <>
       <div className="grilla-4">
         <Indicador titulo="Cupos ofrecidos" valor={numero(d.ofrecidos)} pie="publicados y no bloqueados" />
         <Indicador titulo="Cupos reservados" valor={numero(d.reservados)} />
         <Indicador titulo="Porcentaje de ocupación" valor={porcentaje(d.porcentajeOcupacion)} pie="reservados / publicados"
-          comparacion={{ delta: d.porcentajeOcupacion - d.anterior.porcentajeOcupacion }} />
+          comparacion={d.anterior.ofrecidos > 0 ? { delta: d.porcentajeOcupacion - d.anterior.porcentajeOcupacion } : undefined} />
         <Indicador titulo="Disponibles sin reservar" valor={numero(d.disponibles)} />
       </div>
-      <div className="grilla-graficos">
-        <Anillo titulo="Cupos del período" centro={porcentaje(d.porcentajeOcupacion)} subtitulo="ocupación"
-          partes={[{ nombre: 'Reservados', valor: d.reservados, color: VERDE_AZULADO }, { nombre: 'Disponibles', valor: d.disponibles, color: NEUTRO }]} />
-        <section className="tarjeta tarjeta--padding pila">
-          <div className="fila fila--entre"><h2>Ocupación por policlínico</h2><span className="texto-secundario texto-pequeno">% de cupos publicados que se reservaron</span></div>
-          <BarrasHorizontales datos={porPol} clave="pct" etiqueta="nombre" ancho={170} nombre="Ocupación" formato={porcentaje} />
-        </section>
-      </div>
+      {desglose ? (
+        <div className="grilla-graficos">
+          {anillo}
+          <section className="tarjeta tarjeta--padding pila">
+            <div className="fila fila--entre"><h2>{desglose.titulo}</h2><span className="texto-secundario texto-pequeno">% de cupos publicados que se reservaron</span></div>
+            <BarrasHorizontales datos={desglose.datos} clave="pct" etiqueta="nombre" ancho={desglose.ancho} nombre="Ocupación" formato={porcentaje} />
+          </section>
+        </div>
+      ) : anillo}
       <section className="tarjeta tabla-contenedor">
         <table className="tabla">
           <thead><tr><th>Policlínico</th><th>Profesional</th><th>Ofrecidos</th><th>Reservados</th><th>Disponibles</th><th>Ocupación</th></tr></thead>
@@ -181,37 +199,65 @@ export function Ocupacion({ d }: { d: { ofrecidos: number; reservados: number; d
 
 interface Conteo { etiqueta: string; reservadas: number; asistidas: number; inasistencias: number; porcentajeInasistencia: number }
 
-export function Asistencia({ d }: { d: { total: Conteo; anterior: Conteo; porProfesion: Conteo[]; evolucion: Conteo[] } }) {
+/** Fecha ISO → «10 oct.» para avisar que el último mes de la evolución está incompleto. */
+function diaMes(iso: string) {
+  const [a, m, d] = iso.split('-').map(Number);
+  return new Date(a, m - 1, d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+export function Asistencia({ d }: { d: { hasta: string; total: Conteo; anterior: Conteo; porProfesion: Conteo[]; evolucion: Conteo[] } }) {
+  const conResultado = (c: Conteo) => c.asistidas + c.inasistencias > 0;
+  // Si todavía no se registra asistencia (p. ej. una semana futura), un 0 % sería engañoso.
+  const hayResultados = conResultado(d.total);
   const promedio = d.total.porcentajeInasistencia;
-  const profesiones = [...d.porProfesion].sort((a, b) => b.porcentajeInasistencia - a.porcentajeInasistencia);
-  const evolucion = d.evolucion.map((e) => ({ ...e, mes: mesCorto(e.etiqueta) }));
-  const ultimo = evolucion.length - 1;
+  const profesiones = [...d.porProfesion].filter(conResultado).sort((a, b) => b.porcentajeInasistencia - a.porcentajeInasistencia);
+  // Meses sin asistencia registrada van como null: la línea no baja a 0 %.
+  const evolucion = d.evolucion.map((e) => ({ ...e, mes: mesCorto(e.etiqueta), valor: conResultado(e) ? e.porcentajeInasistencia : null }));
+  const ultimo = evolucion.map((e) => e.valor != null).lastIndexOf(true);
+  const [a, m, dia] = d.hasta.split('-').map(Number);
+  const mesIncompleto = dia < new Date(a, m, 0).getDate();
   return (
     <>
       <div className="grilla-4">
         <Indicador titulo="Citas reservadas" valor={numero(d.total.reservadas)} />
         <Indicador titulo="Asistidas" valor={numero(d.total.asistidas)} />
         <Indicador titulo="Inasistencias" valor={numero(d.total.inasistencias)} />
-        <Indicador titulo="Porcentaje de inasistencia" valor={porcentaje(promedio)}
-          pie={`${numero(d.total.inasistencias)} / ${numero(d.total.asistidas + d.total.inasistencias)} (asistidas + inasistencias)`}
-          comparacion={{ delta: promedio - d.anterior.porcentajeInasistencia, mejorSiBaja: true }}
-          serie={d.evolucion.map((e) => e.porcentajeInasistencia)} />
+        <Indicador titulo="Porcentaje de inasistencia" valor={hayResultados ? porcentaje(promedio) : '—'}
+          pie={hayResultados ? `${numero(d.total.inasistencias)} / ${numero(d.total.asistidas + d.total.inasistencias)} (asistidas + inasistencias)` : 'aún sin asistencia registrada'}
+          comparacion={hayResultados && conResultado(d.anterior) ? { delta: promedio - d.anterior.porcentajeInasistencia, mejorSiBaja: true } : undefined}
+          serie={evolucion.map((e) => e.valor)} />
       </div>
-      <div className="grilla-graficos">
-        <Anillo titulo="Resultado de las citas" centro={porcentaje(promedio)} subtitulo="inasistencia"
-          partes={[{ nombre: 'Asistidas', valor: d.total.asistidas, color: VERDE_AZULADO }, { nombre: 'Inasistencias', valor: d.total.inasistencias, color: NARANJO }]} />
-        <section className="tarjeta tarjeta--padding pila">
-          <h2>Inasistencia por profesión</h2>
-          <BarrasHorizontales datos={profesiones} clave="porcentajeInasistencia" etiqueta="etiqueta" ancho={130} nombre="Inasistencia"
-            formato={porcentaje} colorDe={(p) => (p.porcentajeInasistencia > promedio ? NARANJO : VERDE_AZULADO)} />
-          <ul className="leyenda leyenda--fila">
-            <li><span className="leyenda__marca" style={{ background: NARANJO }} />Sobre el promedio del período ({porcentaje(promedio)})</li>
-            <li><span className="leyenda__marca" style={{ background: VERDE_AZULADO }} />Igual o bajo el promedio</li>
-          </ul>
-        </section>
-      </div>
+      {!hayResultados ? (
+        <div className="aviso aviso--info">
+          {d.total.reservadas === 1 ? 'La cita' : `Las ${numero(d.total.reservadas)} citas`} de este período todavía no {d.total.reservadas === 1 ? 'tiene' : 'tienen'} asistencia registrada.
+          El porcentaje de inasistencia se calcula sobre las citas asistidas e inasistidas.
+        </div>
+      ) : (() => {
+        const anillo = (
+          <Anillo titulo="Resultado de las citas" centro={porcentaje(promedio)} subtitulo="inasistencia" ancho={profesiones.length <= 1}
+            partes={[{ nombre: 'Asistidas', valor: d.total.asistidas, color: VERDE_AZULADO }, { nombre: 'Inasistencias', valor: d.total.inasistencias, color: NARANJO }]} />
+        );
+        // Con una sola profesión (p. ej. al filtrar por profesional) la barra sería igual al anillo.
+        return profesiones.length <= 1 ? anillo : (
+          <div className="grilla-graficos">
+            {anillo}
+            <section className="tarjeta tarjeta--padding pila">
+              <h2>Inasistencia por profesión</h2>
+              <BarrasHorizontales datos={profesiones} clave="porcentajeInasistencia" etiqueta="etiqueta" ancho={130} nombre="Inasistencia"
+                formato={porcentaje} colorDe={(p) => (p.porcentajeInasistencia > promedio ? NARANJO : VERDE_AZULADO)} />
+              <ul className="leyenda leyenda--fila">
+                <li><span className="leyenda__marca" style={{ background: NARANJO }} />Sobre el promedio del período ({porcentaje(promedio)})</li>
+                <li><span className="leyenda__marca" style={{ background: VERDE_AZULADO }} />Igual o bajo el promedio</li>
+              </ul>
+            </section>
+          </div>
+        );
+      })()}
       <section className="tarjeta tarjeta--padding pila">
-        <div className="fila fila--entre"><h2>Evolución de la inasistencia</h2><span className="texto-secundario texto-pequeno">Últimos 6 meses · % de citas reservadas</span></div>
+        <div className="fila fila--entre"><h2>Evolución de la inasistencia</h2>
+          <span className="texto-secundario texto-pequeno">
+            Últimos 6 meses · % sobre asistidas + inasistencias{mesIncompleto ? ` · ${mesCorto(d.hasta.slice(0, 7))} hasta el ${diaMes(d.hasta)}` : ''}
+          </span></div>
         <div style={{ height: 240 }}>
           <ResponsiveContainer>
             <AreaChart data={evolucion} margin={{ top: 28, right: 28, left: 0, bottom: 0 }}>
@@ -220,14 +266,15 @@ export function Asistencia({ d }: { d: { total: Conteo; anterior: Conteo; porPro
               <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fill: '#5b6472', fontSize: 14 }} />
               <YAxis tickFormatter={(v) => `${v} %`} tickLine={false} axisLine={false} width={50} allowDecimals={false} tickCount={4}
                 domain={[(min: number) => Math.max(0, Math.floor(min - 2)), (max: number) => Math.ceil(max + 2)]} tick={{ fill: '#5b6472', fontSize: 13 }} />
-              <Tooltip {...TOOLTIP} cursor={{ stroke: '#aab3bd', strokeDasharray: '4 4' }} formatter={(v: number) => porcentaje(v)} />
-              <Area type="monotone" dataKey="porcentajeInasistencia" name="Inasistencia" stroke={VERDE_AZULADO} strokeWidth={2} fill="url(#relleno)" {...ANIMACION}
-                dot={(p: { cx?: number; cy?: number; index?: number }) => (
-                  <circle key={p.index} cx={p.cx} cy={p.cy} r={p.index === ultimo ? 6 : 4} fill={p.index === ultimo ? VERDE_AZULADO : '#fff'}
+              <Tooltip {...TOOLTIP} cursor={{ stroke: '#aab3bd', strokeDasharray: '4 4' }} formatter={(v) => (typeof v === 'number' ? porcentaje(v) : 'sin registros')} />
+              <Area type="monotone" dataKey="valor" name="Inasistencia" stroke={VERDE_AZULADO} strokeWidth={2} fill="url(#relleno)" {...ANIMACION}
+                dot={(p: { cx?: number; cy?: number; index?: number; value?: number | null }) => (p.value == null || p.cy == null
+                  ? <g key={p.index} />
+                  : <circle key={p.index} cx={p.cx} cy={p.cy} r={p.index === ultimo ? 6 : 4} fill={p.index === ultimo ? VERDE_AZULADO : '#fff'}
                     stroke={p.index === ultimo ? '#fff' : VERDE_AZULADO} strokeWidth={2} />
                 )}
                 activeDot={{ r: 6, fill: VERDE_AZULADO, stroke: '#fff', strokeWidth: 2 }}>
-                <LabelList dataKey="porcentajeInasistencia" position="top" offset={12} formatter={(v: number) => porcentaje(v)} style={{ fontSize: 12, fill: '#5b6472' }} />
+                <LabelList dataKey="valor" position="top" offset={12} formatter={(v: number | null) => (v == null ? '' : porcentaje(v))} style={{ fontSize: 12, fill: '#5b6472' }} />
               </Area>
             </AreaChart>
           </ResponsiveContainer>
@@ -244,11 +291,12 @@ export function Demanda({ d }: { d: { reservas: number; enEspera: number; filas:
   return (
     <>
       <div className="grilla-3">
-        <Indicador titulo="Citas reservadas" valor={numero(d.reservas)} />
-        <Indicador titulo="En lista de espera" valor={numero(d.enEspera)} />
-        <Indicador titulo="Demanda total" valor={numero(d.reservas + d.enEspera)} pie="reservas + lista de espera" />
+        <Indicador titulo="Citas reservadas" valor={numero(d.reservas)} pie="en el período" />
+        <Indicador titulo="En lista de espera" valor={numero(d.enEspera)} pie="personas esperando hoy (no depende del período)" />
+        <Indicador titulo="Demanda total" valor={numero(d.reservas + d.enEspera)} pie="reservas del período + lista de espera de hoy" />
       </div>
-      <section className="tarjeta tarjeta--padding pila">
+      {/* Con un solo profesional (p. ej. al filtrar) la barra repetiría los indicadores. */}
+      {filas.length > 1 && <section className="tarjeta tarjeta--padding pila">
         <h2>Demanda por profesional</h2>
         <div style={{ height: Math.max(220, filas.length * 42) }}>
           <ResponsiveContainer>
@@ -266,9 +314,9 @@ export function Demanda({ d }: { d: { reservas: number; enEspera: number; filas:
         </div>
         <ul className="leyenda leyenda--fila">
           <li><span className="leyenda__marca" style={{ background: VERDE_AZULADO }} />Citas reservadas con el profesional</li>
-          <li><span className="leyenda__marca" style={{ background: NARANJO }} />Pacientes en lista de espera de su profesión</li>
+          <li><span className="leyenda__marca" style={{ background: NARANJO }} />Lista de espera de hoy de su profesión (compartida entre los profesionales de la misma profesión)</li>
         </ul>
-      </section>
+      </section>}
       <section className="tarjeta tabla-contenedor">
         <table className="tabla">
           <thead><tr><th>Profesional</th><th>Profesión</th><th>Policlínicos</th><th>Reservas</th><th>En espera</th><th>Demanda</th></tr></thead>

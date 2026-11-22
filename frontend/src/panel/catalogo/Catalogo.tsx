@@ -228,6 +228,9 @@ function ModalPoliclinico({ actual, alCerrar }: { actual?: Policlinico; alCerrar
   const [cantidadBox, setCantidadBox] = useState(3);
   const [nuevoBox, setNuevoBox] = useState('');
   const qc = useQueryClient();
+  // Los box se leen de la consulta (no de la copia de cuando se abrió el modal) para ver al tiro el que se agrega.
+  const policlinicos = usePoliclinicos();
+  const boxes = (policlinicos.data?.find((p) => p.id === actual?.id) ?? actual)?.boxes ?? [];
   const guardar = useMutation({
     mutationFn: () => actual
       ? api.put(`/api/policlinicos/${actual.id}`, { nombre, direccion, comuna, activo })
@@ -251,9 +254,9 @@ function ModalPoliclinico({ actual, alCerrar }: { actual?: Policlinico; alCerrar
         <>
           <label className="casilla"><input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} /> Policlínico activo</label>
           <div className="pila--chica">
-            <span className="etiqueta">Box: {actual.boxes.map((b) => b.nombre).join(', ')}</span>
+            <span className="etiqueta">Box: {boxes.map((b) => b.nombre).join(', ')}</span>
             <div className="fila" style={{ flexWrap: 'nowrap' }}>
-              <input aria-label="Nombre del nuevo box" className="control" placeholder={`Box ${actual.boxes.length + 1}`} value={nuevoBox} onChange={(e) => setNuevoBox(e.target.value)} />
+              <input aria-label="Nombre del nuevo box" className="control" placeholder={`Box ${boxes.length + 1}`} value={nuevoBox} onChange={(e) => setNuevoBox(e.target.value)} />
               <button className="boton boton--secundario" disabled={!nuevoBox.trim() || agregarBox.isPending} onClick={() => agregarBox.mutate()}><Plus size={18} aria-hidden="true" /> Agregar box</button>
             </div>
             <MensajeError error={agregarBox.error} />

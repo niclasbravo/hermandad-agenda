@@ -2,6 +2,7 @@ package cl.udd.hermandad.agenda.citas.infraestructura;
 
 import cl.udd.hermandad.agenda.citas.dominio.*;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
@@ -36,6 +37,14 @@ public class CitaRepositorySQL implements ICitaRepository {
     @Override
     public Optional<Cita> buscar(Long id) {
         return em.createQuery(FETCH + "where ci.id = :id", Cita.class).setParameter("id", id).getResultStream().findFirst();
+    }
+
+    @Override
+    public Optional<Cita> buscarParaModificar(Long id) {
+        if (em.find(Cita.class, id, LockModeType.PESSIMISTIC_WRITE) == null) {
+            return Optional.empty();
+        }
+        return buscar(id);
     }
 
     @Override

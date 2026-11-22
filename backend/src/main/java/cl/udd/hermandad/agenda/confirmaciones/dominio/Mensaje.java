@@ -109,9 +109,27 @@ public class Mensaje {
         estadoEntrega = EstadoEntrega.FALLIDO;
     }
 
-    /** Mensaje programado de una cita anulada: queda FALLIDO (ver DECISIONES) y la auditoría registra «cancelado: cita anulada». */
+    /** Marca de id_externo para un mensaje que no salió porque se canceló (DI-06): así no se confunde con un envío fallido. */
+    public static final String ID_CANCELADO = "CANCELADO";
+
+    /**
+     * Mensaje programado que ya no debe salir (cita anulada o recordatorio reemplazado): queda FALLIDO, que exige el
+     * esquema, con id_externo = CANCELADO para mostrarlo como «cancelado» y no como «no enviado» (DI-06).
+     */
     public void cancelar(LocalDateTime ahora) {
         marcarFallido(ahora);
+        if (idExterno == null) {
+            idExterno = ID_CANCELADO;
+        }
+    }
+
+    public boolean isCancelado() {
+        return estadoEntrega == EstadoEntrega.FALLIDO && ID_CANCELADO.equals(idExterno);
+    }
+
+    /** Estado para mostrar: CANCELADO no existe en el esquema, se deriva de la marca. */
+    public String estadoVisible() {
+        return isCancelado() ? "CANCELADO" : estadoEntrega.name();
     }
 
     public boolean estaProgramado() {
