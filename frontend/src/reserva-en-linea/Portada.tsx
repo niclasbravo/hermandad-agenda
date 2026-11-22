@@ -107,7 +107,10 @@ export function Portada() {
           <Logo compacto />
           <span className="texto-pequeno">Más de 200 años al servicio de Chile</span>
         </div>
-        <Link to="/ingreso">Ingreso del personal</Link>
+        <div className="fila" style={{ gap: 20 }}>
+          <Link to="/privacidad">Política de privacidad</Link>
+          <Link to="/ingreso">Ingreso del personal</Link>
+        </div>
       </footer>
     </div>
   );

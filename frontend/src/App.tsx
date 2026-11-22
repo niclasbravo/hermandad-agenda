@@ -8,6 +8,7 @@ import { useSesion } from './compartido/sesion';
 import { Cargando } from './compartido/componentes';
 import type { Perfil } from './compartido/tipos';
 import { Portada } from './reserva-en-linea/Portada';
+import { Privacidad } from './reserva-en-linea/Privacidad';
 import { FichaPoliclinico } from './reserva-en-linea/FichaPoliclinico';
 import { ReservaEnLinea } from './reserva-en-linea/ReservaEnLinea';
 import { Ingreso } from './panel/Ingreso';
@@ -40,6 +41,7 @@ export function App() {
       <Route path="/policlinicos/:id" element={<FichaPoliclinico />} />
       <Route path="/reservar" element={<ReservaEnLinea />} />
       <Route path="/ingreso" element={<Ingreso />} />
+      <Route path="/privacidad" element={<Privacidad />} />
       <Route path="/simulador-whatsapp" element={<Suspense fallback={<Cargando />}><SimuladorWhatsApp /></Suspense>} />
 
       <Route path="/agenda-dia" element={<Protegido><AgendaDia /></Protegido>} />

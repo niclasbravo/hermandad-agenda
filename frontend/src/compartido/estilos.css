@@ -416,3 +416,10 @@ button.cupo:active, .segmentado button:active, .opcion-radio:active { transform:
 .vista-wa__nota { font-size: .8125rem; color: #5b6472; text-align: center; background: rgba(255, 255, 255, .7); border-radius: 8px; padding: 6px 10px; }
 @keyframes burbuja { from { opacity: 0; transform: scale(0.96) translateY(4px); } to { opacity: 1; transform: none; } }
 @media (max-width: 1100px) { .reserva-hecha { grid-template-columns: minmax(0, 1fr); } .vista-wa { max-width: 420px; } }
+
+/* ---------------- Política de privacidad ---------------- */
+.privacidad { max-width: 820px; display: flex; flex-direction: column; gap: 14px; }
+.privacidad h1 { font-size: 2rem; line-height: 2.5rem; color: #0b4a55; }
+.privacidad h2 { font-size: 1.25rem; margin-top: 12px; color: #0b4a55; }
+.privacidad ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.privacidad p, .privacidad li { line-height: 1.6; }
