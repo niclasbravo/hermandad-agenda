@@ -68,6 +68,7 @@ Copia `.env` como **`.env.nube`** (está en `.gitignore`) y ajusta:
 DOMINIO=3-91-20-15.sslip.io
 SPRING_PROFILES_ACTIVE=demo        # datos de demostración para la entrega
 MENSAJERIA_PROVEEDOR=whatsapp
+WHATSAPP_NUMEROS_PERMITIDOS=+569XXXXXXXX   # demo: solo estos reciben WhatsApp real; el resto, al simulador
 MYSQL_ROOT_PASSWORD=<una nueva, larga>
 DB_CONTRASENA=<una nueva, larga>
 ```
